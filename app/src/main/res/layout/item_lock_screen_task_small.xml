@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/layout_task_small_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@android:color/transparent"
+    android:layout_marginTop="2dp"
+    android:layout_marginBottom="2dp">
+
+    <LinearLayout
+        android:id="@+id/layout_task_small_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="?android:attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true"
+        android:padding="4dp">
+
+        <ImageView
+            android:id="@+id/iv_task_small_icon"
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:src="@drawable/ic_assignments"
+            android:layout_marginEnd="6dp"
+            app:tint="#FF9F0A" />
+
+        <TextView
+            android:id="@+id/tv_task_small_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="@android:color/white"
+            android:textSize="13sp"
+            android:text="1. Task Title" />
+
+        <ImageView
+            android:id="@+id/iv_task_small_chevron"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:src="@drawable/ic_chevron_right"
+            android:alpha="0.6"
+            android:visibility="gone"
+            app:tint="@android:color/white" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tv_task_small_desc"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#CCFFFFFF"
+        android:textSize="12sp"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="4dp"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="4dp"
+        android:padding="6dp"
+        android:background="#14FFFFFF"
+        android:text="Task Description"
+        android:visibility="gone" />
+
+</LinearLayout>
