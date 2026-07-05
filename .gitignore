@@ -1,9 +1,40 @@
-*.iml
+# Built files and outputs
+/build
+/app/build
+*.apk
+*.aar
+*.ap_
+*.dex
+*.class
+
+# Gradle files
 .gradle
 /local.properties
-/.idea/
+.navigation/
+captures/
+
+# IDE configurations
+.idea/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+
+# Signing files
+*.jks
+*.keystore
+*.pepk
+
+# Log files
+*.log
+
+# OS generated files
 .DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+Thumbs.db
+
+# Temporary/Backup files
+*~
+*.swp
+*.tmp
