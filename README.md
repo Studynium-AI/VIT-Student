@@ -2,35 +2,54 @@
 
 This repository is a fork of the original [VIT Student](https://github.com/therealsujitk/android-vtop-chennai) app created by **Sujit Kumar**. 
 
-The original project can be found at [therealsujitk/android-vtop-chennai](https://github.com/therealsujitk/android-vtop-chennai). All credit for the core features, architecture, and original implementation goes to him.
+The original project can be found at [therealsujitk/android-vtop-chennai](https://github.com/therealsujitk/android-vtop-chennai). All credit for the core features, database integration, and original VTOP client goes to him.
 
 ---
 
-## New Features & Enhancements
+## Major Additions & Enhancements
 
-This edition introduces several major features, usability enhancements, and UI bug fixes:
+This edition introduces several major features focused on lock screen integration, task management, and schedule customization:
 
-### 1. Unified Lab Sessions (Lab Slot Merging)
-* **Combined Timetable Cards**: Contiguous lab sessions of the same subject on a given day are merged into a single card showing the total time span (e.g., `8:00 AM - 9:45 AM` instead of showing two separate cards).
-* **Unified Lock Screen**: Consecutive lab blocks are similarly combined into a single, cohesive card on the lock screen overlay UI.
-* **Smart Progress Tracking**: The circular and horizontal progress bars calculate time across the entire merged duration of the lab.
+### 1. Lock Screen UI Overlay
+* **What it is**: An interactive layout that overlays the system lock screen to show the current day's classes, timings, and pending tasks directly when the user wakes their phone.
+* **How it works**:
+  - The UI uses window flags to draw itself directly on top of the lock screen without requiring the user to unlock their phone.
+  - It displays the daily timetable slots as cards. Completed classes are thinned and dimmed, ongoing classes are highlighted with neon borders and progress indicators, and upcoming classes show a "Starts in X minutes" count.
+  - Clicking any class card expands it to reveal details (faculty, venue) and list any custom tasks/deadlines for that course.
+  - Once the user successfully unlocks the device, the overlay automatically finishes.
 
-### 2. In-App Task and Deadline Management
-* **Create Tasks inside the App**: Added an option to create new tasks or deadlines directly from within the app, bypassing the restriction of only being able to add tasks when the phone is locked.
-* **Unified Dialog**: Added a custom `TaskDialogHelper` that coordinates dialog prompts, TimePickerDialogs, Room database inserts, and exact alarm/reminder registrations in one place.
+### 2. Task & Deadline Management
+* **Create & View Tasks**: You can set custom tasks, assignments, or deadlines for individual subjects. 
+* **Dynamic Integration**: Tasks can be created directly inside the app (via timetable and course detail bottom sheets) or from the lock screen overlay itself.
+* **Alert Notifications**: When a task's start time is reached, the app schedules an exact alarm to post a notification reminder to ensure deadlines are never missed.
 
-### 3. Clickable Subjects in the Courses Tab
-* **Detailed Bottom Sheets**: Subject cards in the **Courses** tab are now clickable. Selecting a subject brings up the detailed bottom sheet containing faculty names, venues, combined slots, attendance statistics (including positive/negative class excess), and all active tasks/deadlines.
-* **Direct Task Shortcuts**: You can add tasks/deadlines for a subject directly from its details card in the Courses list.
-
-### 4. Smart Lab Notifications (Deduplication)
-* **Bypass Duplicate Notifications**: Timetable alarms automatically check if a lab session for the same subject is already ongoing. The app bypasses redundant upcoming notifications for the subsequent periods of the same lab.
-
-### 5. Fully Themed Permissions Screen
-* **Adaptive Theme Colors**: Converted the hardcoded white texts and translucent white card borders in `activity_permissions.xml` to dynamic theme attributes (`?attr/colorOnSurface`, `?attr/colorOnSurfaceVariant`, etc.). The permission setup cards are now fully readable in both light theme (showing dark text on light cards) and dark theme.
+### 3. Lock Screen Scheduling (Time Windows)
+* **Custom Time Window**: You can schedule the active window during which the lock screen overlay is allowed to show (e.g. from 8:00 AM to 6:00 PM). Outside this scheduled window, the overlay will remain disabled to prevent disturbance.
 
 ---
 
-## License
+## Required Permissions
+For the lock screen UI and background scheduling to work, the following permissions must be enabled:
+1. **Display Over Other Apps (System Alert Window)**: Allows the schedule UI to draw on top of the system lock screen activity.
+2. **Exact Alarms & Reminders**: Essential for triggering timetable slot updates and task reminder notifications precisely on time.
+3. **Notifications**: Required to post task deadline alerts and timetable class changes.
+4. **Device Administrator (Optional)**: Needed only to turn off/lock the screen instantly via a double-tap gesture on the lock screen overlay.
 
-This project is licensed under the same GPL-3.0 License. See the original project link for full licensing details.
+---
+
+## Technical Struggles & Solutions (Lock Screen UI)
+
+During the development of the Lock Screen UI, we encountered two major hurdles:
+
+### Struggle 1: Displaying the UI Over the Lock Screen Securely Across Android Versions
+* **The Struggle**: Android restricts drawing custom windows or activities over the lock screen due to security guidelines. Older methods became deprecated in newer API levels (API 27+), and ensuring that the activity dismissed itself smoothly when the user unlocked their phone was unreliable.
+* **The Solution**: 
+  - We implemented conditional flags that utilize the modern API `setShowWhenLocked(true)` for Android Oreo MR1 and above, while falling back to `WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED` for older versions.
+  - We registered a dynamic `BroadcastReceiver` that listens for the system `Intent.ACTION_USER_PRESENT` event. The moment the user unlocks their device, the broadcast receiver intercepts it and cleanly finishes the overlay activity, returning them to their home screen.
+
+### Struggle 2: Implementing Double-Tap to Sleep Gestures
+* **The Struggle**: Turning off the device screen programmatically is heavily locked down by the Android operating system to prevent malicious apps from taking control of the screen.
+* **The Solution**:
+  - We registered the lock screen activity to support the Device Administration API.
+  - When the user double-taps the screen, a gesture detector catches the event and invokes `DevicePolicyManager.lockNow()`. 
+  - If permission is missing, it prompts the user to activate the app as a Device Administrator through a system dialog, enabling a clean screen lock mechanism without rooting.
