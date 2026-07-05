@@ -73,7 +73,7 @@ public class SettingsRepository {
 
     public static final String DEVELOPER_BASE_URL = "https://therealsuji.tk";
 
-    public static final String GITHUB_BASE_URL = "https://github.com/therealsujitk/android-vtop-chennai";
+    public static final String GITHUB_BASE_URL = "https://github.com/Studynium-AI/VIT-Student.git";
     public static final String GITHUB_FEATURE_URL = GITHUB_BASE_URL + "/issues";
     public static final String GITHUB_ISSUE_URL = GITHUB_BASE_URL + "/issues";
 
