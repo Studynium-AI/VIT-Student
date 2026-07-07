@@ -76,6 +76,7 @@ public class SettingsRepository {
     public static final String GITHUB_BASE_URL = "https://github.com/Studynium-AI/VIT-Student.git";
     public static final String GITHUB_FEATURE_URL = GITHUB_BASE_URL + "/issues";
     public static final String GITHUB_ISSUE_URL = GITHUB_BASE_URL + "/issues";
+    public static final String GITHUB_RELEASE_URL = "https://github.com/Studynium-AI/VIT-Student/releases/latest";
 
     public static final String MOODLE_BASE_URL = "https://lms.vit.ac.in";
     public static final String MOODLE_LOGIN_PATH = "/login/token.php";
