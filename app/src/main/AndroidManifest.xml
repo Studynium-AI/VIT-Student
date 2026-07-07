@@ -123,14 +123,14 @@
         <receiver android:name=".receivers.TimetableNotificationReceiver" />
         <receiver android:name=".receivers.TaskNotificationReceiver" android:exported="false">
             <intent-filter>
-                <action android:name="tk.therealsuji.vtopchennai.ACTION_TASK_REMINDER" />
-                <action android:name="tk.therealsuji.vtopchennai.ACTION_TASK_COMPLETE" />
+                <action android:name="app.naevis.vitstudent.ACTION_TASK_REMINDER" />
+                <action android:name="app.naevis.vitstudent.ACTION_TASK_COMPLETE" />
             </intent-filter>
         </receiver>
         <receiver android:name=".receivers.ScheduleAlarmReceiver" android:exported="false">
             <intent-filter>
-                <action android:name="tk.therealsuji.vtopchennai.ACTION_SCHEDULE_START" />
-                <action android:name="tk.therealsuji.vtopchennai.ACTION_SCHEDULE_STOP" />
+                <action android:name="app.naevis.vitstudent.ACTION_SCHEDULE_START" />
+                <action android:name="app.naevis.vitstudent.ACTION_SCHEDULE_STOP" />
             </intent-filter>
         </receiver>
         <receiver
@@ -143,7 +143,7 @@
 
         <receiver android:name=".receivers.AutoSyncReceiver" android:exported="false">
             <intent-filter>
-                <action android:name="tk.therealsuji.vtopchennai.ACTION_TRIGGER_AUTO_SYNC" />
+                <action android:name="app.naevis.vitstudent.ACTION_TRIGGER_AUTO_SYNC" />
             </intent-filter>
         </receiver>
     </application>
