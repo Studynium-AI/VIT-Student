@@ -38,6 +38,10 @@ import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.firebase.analytics.FirebaseAnalytics;
 
 import app.naevis.vitstudent.R;
+import app.naevis.vitstudent.helpers.UpdateChecker;
+import app.naevis.vitstudent.fragments.dialogs.UpdateDialogFragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import app.naevis.vitstudent.activities.LoginActivity;
 import app.naevis.vitstudent.adapters.AnnouncementItemAdapter;
 import app.naevis.vitstudent.adapters.ProfileGroupAdapter;
@@ -368,6 +372,33 @@ public class ProfileFragment extends Fragment {
                         context.startActivity(shareIntent);
                     },
                     null
+            ),
+            new ItemData(
+                    R.drawable.ic_update_available,
+                    "Check for Updates",
+                    "Check if a newer version of the app is available",
+                    context -> {
+                        Toast.makeText(context, "Checking for updates...", Toast.LENGTH_SHORT).show();
+                        UpdateChecker.checkForUpdates(context, true)
+                                .observeOn(AndroidSchedulers.mainThread())
+                                .subscribe(updateInfo -> {
+                                    if (updateInfo.isUpdateAvailable) {
+                                        FragmentManager fragmentManager = ((FragmentActivity) context).getSupportFragmentManager();
+                                        FragmentTransaction transaction = fragmentManager.beginTransaction();
+                                        transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
+                                        transaction.add(android.R.id.content, UpdateDialogFragment.newInstance(
+                                                updateInfo.latestVersion,
+                                                updateInfo.releaseNotes,
+                                                updateInfo.downloadUrl,
+                                                updateInfo.isForceUpdate
+                                        )).addToBackStack(null).commit();
+                                    } else {
+                                        Toast.makeText(context, "You are on the latest version.", Toast.LENGTH_SHORT).show();
+                                    }
+                                }, throwable -> {
+                                    Toast.makeText(context, "Failed to check for updates.", Toast.LENGTH_SHORT).show();
+                                });
+                    }
             ),
             new ItemData(
                     R.drawable.ic_sign_out,

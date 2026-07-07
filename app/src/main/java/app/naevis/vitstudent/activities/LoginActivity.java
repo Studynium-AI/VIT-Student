@@ -31,6 +31,8 @@ import app.naevis.vitstudent.R;
 import app.naevis.vitstudent.fragments.dialogs.UpdateDialogFragment;
 import app.naevis.vitstudent.helpers.SettingsRepository;
 import app.naevis.vitstudent.helpers.VTOPHelper;
+import app.naevis.vitstudent.helpers.UpdateChecker;
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 
 public class LoginActivity extends AppCompatActivity {
     SharedPreferences encryptedSharedPreferences, sharedPreferences;
@@ -131,37 +133,22 @@ public class LoginActivity extends AppCompatActivity {
         /*
             Check for updates
          */
-        SettingsRepository.fetchAboutJson(true)
-                .subscribe(new Observer<JSONObject>() {
-                    @Override
-                    public void onSubscribe(@NonNull Disposable d) {
-                        compositeDisposable.add(d);
+        UpdateChecker.checkForUpdates(this, false)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(updateInfo -> {
+                    if (updateInfo.isUpdateAvailable) {
+                        FragmentManager fragmentManager = getSupportFragmentManager();
+                        FragmentTransaction transaction = fragmentManager.beginTransaction();
+                        transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
+                        transaction.add(android.R.id.content, UpdateDialogFragment.newInstance(
+                                updateInfo.latestVersion,
+                                updateInfo.releaseNotes,
+                                updateInfo.downloadUrl,
+                                updateInfo.isForceUpdate
+                        )).addToBackStack(null).commit();
                     }
-
-                    @Override
-                    public void onNext(@NonNull JSONObject about) {
-                        try {
-                            int versionCode = about.getInt("versionCode");
-                            String versionName = about.getString("tagName");
-                            String releaseNotes = about.getString("releaseNotes");
-
-                            if (versionCode > BuildConfig.VERSION_CODE) {
-                                FragmentManager fragmentManager = getSupportFragmentManager();
-                                FragmentTransaction transaction = fragmentManager.beginTransaction();
-                                transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
-                                transaction.add(android.R.id.content, UpdateDialogFragment.newInstance(versionName, releaseNotes)).addToBackStack(null).commit();
-                            }
-                        } catch (Exception ignored) {
-                        }
-                    }
-
-                    @Override
-                    public void onError(@NonNull Throwable e) {
-                    }
-
-                    @Override
-                    public void onComplete() {
-                    }
+                }, throwable -> {
+                    // Fail silently
                 });
     }
 

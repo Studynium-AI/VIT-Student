@@ -50,6 +50,44 @@
             </LinearLayout>
         </ScrollView>
 
+        <CheckBox
+            android:id="@+id/checkbox_skip_version"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:layout_marginBottom="10dp"
+            android:text="Skip this version"
+            android:textSize="14sp" />
+
+        <LinearLayout
+            android:id="@+id/layout_progress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="15dp">
+
+            <ProgressBar
+                android:id="@+id/progress_bar_download"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100"
+                android:progress="0" />
+
+            <TextView
+                android:id="@+id/text_view_progress_percent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:textAlignment="center"
+                android:textSize="14sp"
+                android:textColor="?attr/colorPrimary"
+                android:textStyle="bold"
+                android:text="Downloading: 0%" />
+        </LinearLayout>
+
         <Button
             android:id="@+id/button_update"
             android:layout_width="match_parent"

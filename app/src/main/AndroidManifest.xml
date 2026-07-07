@@ -15,6 +15,7 @@
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
@@ -144,6 +145,12 @@
         <receiver android:name=".receivers.AutoSyncReceiver" android:exported="false">
             <intent-filter>
                 <action android:name="app.naevis.vitstudent.ACTION_TRIGGER_AUTO_SYNC" />
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name=".receivers.UpdateInstallReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="app.naevis.vitstudent.ACTION_INSTALL_STATUS" />
             </intent-filter>
         </receiver>
     </application>
