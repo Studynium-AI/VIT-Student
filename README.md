@@ -26,7 +26,7 @@ This edition introduces several major features focused on lock screen integratio
 ### 3. Lock Screen Scheduling (Time Windows)
 * **Custom Time Window**: You can schedule the active window during which the lock screen overlay is allowed to show (e.g. from 8:00 AM to 6:00 PM). Outside this scheduled window, the overlay will remain disabled to prevent disturbance.
 
-### 4. Course-Specific Rich Notes
+### 4. Course-Specific Notes
 * **What it is**: A dedicated note-taking space for every course, letting you write instructions and insert images (such as class slides, blackboard drawings, or guidelines) right inside the app or directly over your lock screen.
 * **Why we built it (Logical Reason)**: During lectures, professors frequently mention specific guidelines for reports, changes to test formats, or additional references. Rather than opening a separate app or forgetting the instructions, you can save them directly under that specific course.
 * **Key Features**:
