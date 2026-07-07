@@ -92,6 +92,7 @@ public class VTOPService extends Service {
     WebView webView;
     boolean isAutoSync = false;
     private boolean isSyncSuccess = false;
+    private android.os.PowerManager.WakeLock wakeLock;
 
     Map<Integer, Course> theoryCourses, labCourses, projectCourses;
     Map<String, CumulativeMark> cumulativeMarks;
@@ -143,6 +144,13 @@ public class VTOPService extends Service {
             this.notificationManager.cancel(SettingsRepository.NOTIFICATION_ID_VTOP_DOWNLOAD);  // In case the notification isn't removed for some reason
         } else {
             this.isAutoSync = intent != null && intent.getBooleanExtra("is_auto_sync", false);
+            if (this.isAutoSync) {
+                android.os.PowerManager pm = (android.os.PowerManager) getSystemService(POWER_SERVICE);
+                if (pm != null) {
+                    this.wakeLock = pm.newWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK, "vtopstudent:AutoSyncWakeLock");
+                    this.wakeLock.acquire(10 * 60 * 1000L); // 10 minutes timeout
+                }
+            }
 
             this.startForeground(SettingsRepository.NOTIFICATION_ID_VTOP_DOWNLOAD, this.notification.build());
 
@@ -325,6 +333,14 @@ public class VTOPService extends Service {
                 editor.putString("auto_sync_last_status", "Failed");
             }
             editor.apply();
+        }
+
+        if (this.wakeLock != null && this.wakeLock.isHeld()) {
+            try {
+                this.wakeLock.release();
+            } catch (Exception ignored) {
+            }
+            this.wakeLock = null;
         }
 
         try {
