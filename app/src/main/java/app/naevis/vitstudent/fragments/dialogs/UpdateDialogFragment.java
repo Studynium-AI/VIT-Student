@@ -1,7 +1,7 @@
 package app.naevis.vitstudent.fragments.dialogs;
 
+import android.app.Activity;
 import android.app.Dialog;
-import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.Html;
@@ -21,8 +21,10 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
 
 import io.noties.markwon.Markwon;
+import app.naevis.vitstudent.BuildConfig;
 import app.naevis.vitstudent.R;
 import app.naevis.vitstudent.helpers.SettingsRepository;
+import app.naevis.vitstudent.helpers.UpdateChecker;
 import app.naevis.vitstudent.helpers.UpdateDownloader;
 import app.naevis.vitstudent.helpers.UpdateInstaller;
 
@@ -46,9 +48,10 @@ public class UpdateDialogFragment extends DialogFragment {
     private UpdateDownloader downloader;
     private File downloadedApkFile;
     private boolean isDownloading = false;
+    private boolean isWaitingForInstallPermission = false;
+    private boolean isInstallerLaunched = false;
 
     public UpdateDialogFragment() {
-        // Required empty public constructor
     }
 
     public static UpdateDialogFragment newInstance(String versionName, String releaseNotes, String downloadUrl, boolean isForceUpdate) {
@@ -122,11 +125,13 @@ public class UpdateDialogFragment extends DialogFragment {
         buttonCancel.setVisibility(View.GONE);
         checkboxSkipVersion.setVisibility(View.GONE);
         layoutProgress.setVisibility(View.VISIBLE);
+        textViewProgressPercent.setText("Downloading: 0%");
 
         downloader = new UpdateDownloader(requireContext());
         downloader.downloadApk(downloadUrl, versionName, new UpdateDownloader.DownloadListener() {
             @Override
             public void onProgress(int progressPercent) {
+                if (!isAdded()) return;
                 progressBarDownload.setProgress(progressPercent);
                 textViewProgressPercent.setText("Downloading: " + progressPercent + "%");
             }
@@ -135,39 +140,102 @@ public class UpdateDialogFragment extends DialogFragment {
             public void onSuccess(File downloadedFile) {
                 isDownloading = false;
                 downloadedApkFile = downloadedFile;
-                
-                // Proceed to install check
-                checkAndInstall();
+
+                if (!isAdded()) return;
+
+                // Show installing state
+                progressBarDownload.setIndeterminate(true);
+                textViewProgressPercent.setText("Installing update...");
+
+                SettingsRepository.logSyncStatus(requireContext(), "SUCCESS", "Update Downloaded", "APK downloaded successfully: " + downloadedFile.getName());
+
+                // Short delay to let the user see "Installing..." before the system dialog covers us
+                textViewProgressPercent.postDelayed(() -> {
+                    if (isAdded()) {
+                        proceedToInstall();
+                    }
+                }, 500);
             }
 
             @Override
             public void onFailure(String errorMessage) {
                 isDownloading = false;
+                if (!isAdded()) return;
+                SettingsRepository.logSyncStatus(requireContext(), "FAILURE", "Update Download Failed", errorMessage);
                 Toast.makeText(requireContext(), "Download failed: " + errorMessage, Toast.LENGTH_LONG).show();
                 resetUI();
             }
         });
     }
 
-    private void checkAndInstall() {
+    private void proceedToInstall() {
         if (downloadedApkFile == null || !downloadedApkFile.exists()) {
             Toast.makeText(requireContext(), "Downloaded APK file not found.", Toast.LENGTH_SHORT).show();
             resetUI();
             return;
         }
 
-        if (UpdateInstaller.checkInstallPermission(requireContext())) {
-            try {
-                UpdateInstaller.installApk(requireContext(), downloadedApkFile);
-                dismiss();
-            } catch (Exception e) {
-                Log.e(TAG, "Installation failed", e);
-                Toast.makeText(requireContext(), "Install failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        Activity activity = getActivity();
+        if (activity == null) return;
+
+        if (!UpdateInstaller.canInstall(requireContext())) {
+            // Need permission first — mark that we're waiting, then redirect to settings
+            isWaitingForInstallPermission = true;
+            Toast.makeText(requireContext(), "Please enable 'Install unknown apps' permission.", Toast.LENGTH_LONG).show();
+            UpdateInstaller.requestInstallPermission(activity);
+            return;
+        }
+
+        // Permission granted — launch the system installer
+        try {
+            isInstallerLaunched = true;
+            UpdateInstaller.installApk(activity, downloadedApkFile);
+            SettingsRepository.logSyncStatus(requireContext(), "SUCCESS", "Installer Launched", "System APK installer opened for version " + versionName);
+        } catch (Exception e) {
+            Log.e(TAG, "Installation failed", e);
+            SettingsRepository.logSyncStatus(requireContext(), "FAILURE", "Install Failed", e.getMessage());
+            Toast.makeText(requireContext(), "Install failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            resetUI();
+        }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        // Case 1: We sent the user to enable "Install unknown apps" — now check if they granted it
+        if (isWaitingForInstallPermission && downloadedApkFile != null && downloadedApkFile.exists()) {
+            isWaitingForInstallPermission = false;
+            if (UpdateInstaller.canInstall(requireContext())) {
+                proceedToInstall();
+            } else {
+                Toast.makeText(requireContext(), "Permission not granted. Cannot install update.", Toast.LENGTH_LONG).show();
                 resetUI();
             }
-        } else {
-            Toast.makeText(requireContext(), "Please enable 'Install unknown apps' permission to complete the update.", Toast.LENGTH_LONG).show();
-            UpdateInstaller.requestInstallPermission(requireContext());
+            return;
+        }
+
+        // Case 2: We launched the system installer — user came back. Check if the update was applied.
+        if (isInstallerLaunched) {
+            isInstallerLaunched = false;
+
+            // Compare current version with the update version to determine success
+            boolean wasUpdated = UpdateChecker.isNewerVersion(BuildConfig.VERSION_NAME, versionName);
+            // If the app is still running, the update wasn't applied (user cancelled or it's pending relaunch)
+            // But if we're still here, the install may have been cancelled
+            progressBarDownload.setIndeterminate(false);
+            progressBarDownload.setProgress(100);
+            textViewProgressPercent.setText("Update ready to install. If the installer was dismissed, tap below to retry.");
+
+            // Show a retry button
+            buttonUpdate.setVisibility(View.VISIBLE);
+            buttonUpdate.setOnClickListener(v -> proceedToInstall());
+
+            if (!isForceUpdate) {
+                buttonCancel.setVisibility(View.VISIBLE);
+                buttonCancel.setOnClickListener(v -> dismiss());
+                setCancelable(true);
+            }
         }
     }
 
@@ -176,24 +244,16 @@ public class UpdateDialogFragment extends DialogFragment {
             downloader.cleanup();
         }
         layoutProgress.setVisibility(View.GONE);
+        progressBarDownload.setIndeterminate(false);
+        progressBarDownload.setProgress(0);
         buttonUpdate.setVisibility(View.VISIBLE);
+        buttonUpdate.setOnClickListener(view -> startUpdateDownload());
         if (!isForceUpdate) {
             buttonCancel.setVisibility(View.VISIBLE);
             checkboxSkipVersion.setVisibility(View.VISIBLE);
             setCancelable(true);
         } else {
             setCancelable(false);
-        }
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        // If we were waiting for the user to grant unknown source install permission
-        if (!isDownloading && downloadedApkFile != null && downloadedApkFile.exists()) {
-            if (UpdateInstaller.checkInstallPermission(requireContext())) {
-                checkAndInstall();
-            }
         }
     }
 
