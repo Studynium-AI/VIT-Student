@@ -1,7 +1,9 @@
 package tk.therealsuji.vtopchennai.lockscreen;
 
 import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
+import tk.therealsuji.vtopchennai.activities.CourseNotesActivity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
@@ -212,6 +214,14 @@ public class LockScreenClassesAdapter extends RecyclerView.Adapter<LockScreenCla
                 onTaskAddListener.onAddTaskClicked(item.courseCode, item.courseTitle);
             }
         });
+
+        holder.notesButton.setOnClickListener(v -> {
+            Intent intent = new Intent(context, CourseNotesActivity.class);
+            intent.putExtra("course_code", item.courseCode);
+            intent.putExtra("course_title", item.courseTitle);
+            intent.putExtra("from_lockscreen", true);
+            context.startActivity(intent);
+        });
     }
 
     @Override
@@ -321,7 +331,7 @@ public class LockScreenClassesAdapter extends RecyclerView.Adapter<LockScreenCla
     class ViewHolder extends RecyclerView.ViewHolder {
         TextView title, time, code, type, attendance, facultyInfo, skippableClasses, statusText, taskBadge;
         LinearLayout expandableLayout, cardContent, subDetails, progressSection, tasksSection, tasksContainer;
-        MaterialButton addTaskButton;
+        MaterialButton addTaskButton, notesButton;
         ProgressBar progressBar;
         Disposable disposable;
         Disposable tasksDisposable;
@@ -337,6 +347,7 @@ public class LockScreenClassesAdapter extends RecyclerView.Adapter<LockScreenCla
             skippableClasses = itemView.findViewById(R.id.tv_skippable_classes);
             expandableLayout = itemView.findViewById(R.id.layout_expandable_details);
             addTaskButton = itemView.findViewById(R.id.btn_add_task);
+            notesButton = itemView.findViewById(R.id.btn_notes);
             progressBar = itemView.findViewById(R.id.pb_class_progress);
             statusText = itemView.findViewById(R.id.tv_class_status);
 

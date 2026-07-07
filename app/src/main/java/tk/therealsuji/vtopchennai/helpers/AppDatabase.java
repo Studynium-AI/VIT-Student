@@ -33,6 +33,8 @@ import tk.therealsuji.vtopchennai.models.Spotlight;
 import tk.therealsuji.vtopchennai.models.Staff;
 import tk.therealsuji.vtopchennai.models.Task;
 import tk.therealsuji.vtopchennai.models.Timetable;
+import tk.therealsuji.vtopchennai.models.CourseNote;
+import tk.therealsuji.vtopchennai.interfaces.CourseNotesDao;
 
 @Database(
         entities = {
@@ -48,9 +50,10 @@ import tk.therealsuji.vtopchennai.models.Timetable;
                 Spotlight.class,
                 Staff.class,
                 Task.class,
-                Timetable.class
+                Timetable.class,
+                CourseNote.class
         },
-        version = 4,
+        version = 5,
         autoMigrations = {
                 @AutoMigration(from = 1, to = 2),
         }
@@ -62,7 +65,7 @@ public abstract class AppDatabase extends RoomDatabase {
         if (instance == null) {
             instance = Room.databaseBuilder(context.getApplicationContext(),
                     AppDatabase.class, "vit_student")
-                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .fallbackToDestructiveMigration()
                     .build();
         }
@@ -100,6 +103,8 @@ public abstract class AppDatabase extends RoomDatabase {
 
     public abstract TimetableDao timetableDao();
 
+    public abstract CourseNotesDao courseNotesDao();
+
     // Manual Migrations
     static final Migration MIGRATION_2_3 = new Migration(2, 3) {
         @Override
@@ -116,6 +121,13 @@ public abstract class AppDatabase extends RoomDatabase {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase database) {
             database.execSQL("CREATE TABLE IF NOT EXISTS `tasks` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `course_code` TEXT, `title` TEXT, `description` TEXT, `start_time` INTEGER NOT NULL, `end_time` INTEGER NOT NULL, `is_deadline` INTEGER NOT NULL, `is_completed` INTEGER NOT NULL)");
+        }
+    };
+
+    static final Migration MIGRATION_4_5 = new Migration(4, 5) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("CREATE TABLE IF NOT EXISTS `course_notes` (`course_code` TEXT NOT NULL, `content` TEXT, PRIMARY KEY(`course_code`))");
         }
     };
 }

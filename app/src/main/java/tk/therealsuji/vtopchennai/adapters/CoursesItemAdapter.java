@@ -1,8 +1,10 @@
 package tk.therealsuji.vtopchennai.adapters;
 
 import android.content.Context;
+import android.content.Intent;
 import android.text.Html;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import tk.therealsuji.vtopchennai.activities.CourseNotesActivity;
 import com.google.android.material.color.MaterialColors;
 import tk.therealsuji.vtopchennai.helpers.AppDatabase;
 import tk.therealsuji.vtopchennai.helpers.TaskDialogHelper;
@@ -289,6 +291,14 @@ public class CoursesItemAdapter extends RecyclerView.Adapter<CoursesItemAdapter.
                     TaskDialogHelper.showAddTaskDialog(context, courseItem.courseCode, courseItem.courseTitle, () -> {
                         TaskDialogHelper.loadTasksForBottomSheet(bottomSheetLayout, courseItem.courseCode, appDatabase);
                     });
+                });
+
+                View btnNotes = bottomSheetLayout.findViewById(R.id.btn_notes);
+                btnNotes.setOnClickListener(v -> {
+                    Intent intent = new Intent(context, CourseNotesActivity.class);
+                    intent.putExtra("course_code", courseItem.courseCode);
+                    intent.putExtra("course_title", courseItem.courseTitle);
+                    context.startActivity(intent);
                 });
             });
         }

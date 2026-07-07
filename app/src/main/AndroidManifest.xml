@@ -84,6 +84,19 @@
             android:launchMode="singleTop"
             android:exported="false" />
 
+        <activity
+            android:name=".activities.CourseNotesActivity"
+            android:showWhenLocked="true"
+            android:theme="@style/Theme.VTOP"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false" />
+
+        <activity
+            android:name=".activities.PhotoViewerActivity"
+            android:showWhenLocked="true"
+            android:theme="@style/Theme.VTOP"
+            android:exported="false" />
+
         <meta-data
             android:name="preloaded_fonts"
             android:resource="@array/preloaded_fonts" />

@@ -112,14 +112,42 @@
             </LinearLayout>
         </LinearLayout>
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_add_task"
-            style="@style/Widget.Material3.Button.TextButton.Icon"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:orientation="horizontal"
             android:layout_marginTop="8dp"
-            android:text="Add Task or Deadline"
-            app:icon="@drawable/ic_add" />
+            android:weightSum="2">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_add_task"
+                style="@style/Widget.Material3.Button.TonalButton.Icon"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Add Task / Deadline"
+                android:insetLeft="0dp"
+                android:insetRight="0dp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                app:iconPadding="4dp"
+                app:icon="@drawable/ic_add" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_notes"
+                style="@style/Widget.Material3.Button.TonalButton.Icon"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="Notes"
+                android:insetLeft="0dp"
+                android:insetRight="0dp"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                app:iconPadding="4dp"
+                app:icon="@drawable/ic_notes" />
+        </LinearLayout>
 
         <!-- Tasks Divider -->
         <View

@@ -3,7 +3,9 @@ package tk.therealsuji.vtopchennai.adapters;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.Intent;
 import android.text.Html;
+import tk.therealsuji.vtopchennai.activities.CourseNotesActivity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -224,6 +226,14 @@ public class TimetableItemAdapter extends RecyclerView.Adapter<TimetableItemAdap
                                 tk.therealsuji.vtopchennai.helpers.TaskDialogHelper.showAddTaskDialog(context, course.courseCode, course.courseTitle, () -> {
                                     tk.therealsuji.vtopchennai.helpers.TaskDialogHelper.loadTasksForBottomSheet(bottomSheetLayout, course.courseCode, appDatabase);
                                 });
+                            });
+
+                            View btnNotes = bottomSheetLayout.findViewById(R.id.btn_notes);
+                            btnNotes.setOnClickListener(v -> {
+                                Intent intent = new Intent(context, CourseNotesActivity.class);
+                                intent.putExtra("course_code", course.courseCode);
+                                intent.putExtra("course_title", course.courseTitle);
+                                context.startActivity(intent);
                             });
                         }
 
