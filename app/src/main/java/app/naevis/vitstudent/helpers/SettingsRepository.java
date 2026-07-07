@@ -472,4 +472,30 @@ public class SettingsRepository {
             throw new RuntimeException(e);
         }
     }
+
+    public static void logSyncStatus(Context context, String type, String title, String message) {
+        try {
+            SharedPreferences prefs = getSharedPreferences(context);
+            String logsJson = prefs.getString("sync_logs_json", "[]");
+            org.json.JSONArray logsArray = new org.json.JSONArray(logsJson);
+            
+            org.json.JSONObject logEntry = new org.json.JSONObject();
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
+            logEntry.put("timestamp", sdf.format(new java.util.Date()));
+            logEntry.put("type", type); // "SUCCESS" or "FAILURE"
+            logEntry.put("title", title);
+            logEntry.put("message", message);
+            
+            org.json.JSONArray newArray = new org.json.JSONArray();
+            newArray.put(logEntry);
+            for (int i = 0; i < logsArray.length(); i++) {
+                if (i >= 50) break;
+                newArray.put(logsArray.get(i));
+            }
+            
+            prefs.edit().putString("sync_logs_json", newArray.toString()).apply();
+        } catch (Exception e) {
+            android.util.Log.e("SettingsRepository", "Failed to write log", e);
+        }
+    }
 }

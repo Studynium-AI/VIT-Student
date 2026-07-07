@@ -40,6 +40,7 @@ import com.google.firebase.analytics.FirebaseAnalytics;
 import app.naevis.vitstudent.R;
 import app.naevis.vitstudent.helpers.UpdateChecker;
 import app.naevis.vitstudent.fragments.dialogs.UpdateDialogFragment;
+import app.naevis.vitstudent.fragments.dialogs.LogDialogFragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import app.naevis.vitstudent.activities.LoginActivity;
@@ -398,6 +399,15 @@ public class ProfileFragment extends Fragment {
                                 }, throwable -> {
                                     Toast.makeText(context, "Failed to check for updates.", Toast.LENGTH_SHORT).show();
                                 });
+                    }
+            ),
+            new ItemData(
+                    R.drawable.ic_sync,
+                    "Sync Logs",
+                    "View background and manual synchronization logs",
+                    context -> {
+                        FragmentManager fragmentManager = ((FragmentActivity) context).getSupportFragmentManager();
+                        new LogDialogFragment().show(fragmentManager, "LogDialogFragment");
                     }
             ),
             new ItemData(

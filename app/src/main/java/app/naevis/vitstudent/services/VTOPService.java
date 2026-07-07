@@ -92,6 +92,7 @@ public class VTOPService extends Service {
     WebView webView;
     boolean isAutoSync = false;
     private boolean isSyncSuccess = false;
+    private boolean isReCaptchaBlocked = false;
     private android.os.PowerManager.WakeLock wakeLock;
 
     Map<Integer, Course> theoryCourses, labCourses, projectCourses;
@@ -329,10 +330,23 @@ public class VTOPService extends Service {
             editor.putLong("auto_sync_last_time", Calendar.getInstance().getTimeInMillis());
             if (this.isSyncSuccess) {
                 editor.putString("auto_sync_last_status", "Success");
+                SettingsRepository.logSyncStatus(getApplicationContext(), "SUCCESS", "Auto-Sync Successful", "All data (timetable, attendance, etc.) was successfully updated in the background.");
+            } else if (this.isReCaptchaBlocked) {
+                editor.putString("auto_sync_last_status", "Failed: reCaptcha block. Retrying...");
+                SettingsRepository.logSyncStatus(getApplicationContext(), "FAILURE", "reCaptcha Block", "Google reCaptcha image grid encountered. Aborted and rescheduled retry in 10 seconds.");
             } else {
                 editor.putString("auto_sync_last_status", "Failed");
+                SettingsRepository.logSyncStatus(getApplicationContext(), "FAILURE", "Auto-Sync Failed", "The background sync run completed without fully updating data.");
             }
             editor.apply();
+        } else {
+            if (this.isSyncSuccess) {
+                SettingsRepository.logSyncStatus(getApplicationContext(), "SUCCESS", "Manual Sync Successful", "All data updated successfully.");
+            } else if (this.isReCaptchaBlocked) {
+                SettingsRepository.logSyncStatus(getApplicationContext(), "FAILURE", "reCaptcha Block", "Google reCaptcha image grid encountered.");
+            } else {
+                SettingsRepository.logSyncStatus(getApplicationContext(), "FAILURE", "Manual Sync Failed", "The manual sync process failed or was aborted.");
+            }
         }
 
         if (this.wakeLock != null && this.wakeLock.isHeld()) {
@@ -397,6 +411,8 @@ public class VTOPService extends Service {
     private void error(final int errorCode, final String errorMessage) {
         Toast.makeText(getApplicationContext(), "Error " + errorCode + ". " + errorMessage, Toast.LENGTH_SHORT).show();
         this.reloadPage("/login", true);
+
+        SettingsRepository.logSyncStatus(getApplicationContext(), "FAILURE", "Sync Error " + errorCode, errorMessage);
 
         // Firebase Crashlytics Logging
         FirebaseCrashlytics crashlytics = FirebaseCrashlytics.getInstance();
@@ -517,10 +533,7 @@ public class VTOPService extends Service {
      */
     private void executeCaptcha() {
         if (this.isAutoSync) {
-            SharedPreferences.Editor editor = this.sharedPreferences.edit();
-            editor.putString("auto_sync_last_status", "Failed: reCaptcha block. Retrying...");
-            editor.apply();
-
+            this.isReCaptchaBlocked = true;
             triggerReSyncAfterDelay();
             this.endService(true);
             return;
