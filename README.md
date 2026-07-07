@@ -36,6 +36,16 @@ This edition introduces several major features focused on lock screen integratio
   - **Undo Guard**: If you accidentally delete an image, a 7-second "Undo" bar allows you to restore it instantly.
   - **Auto-Save**: Everything you type is automatically saved in the background, ensuring no notes are ever lost.
 
+### 5. Google Gemini Auto-Sync & Captcha Solver
+* **What it is**: A fully automated background synchronization engine that periodically updates class timetable and attendance data without any manual intervention.
+* **Why we built it (Logical Reason)**: Academic portals often log you out or require fresh data refreshes. Manually solving captchas every time you want to check your latest timetable is tedious. By automating the process, the app stays updated in the background, making your lock screen timetable immediately accurate when you wake up your phone.
+* **Key Features**:
+  - **Gemini Captcha Solver**: Uses a Google Gemini API Key (`gemini-2.5-flash` model) to analyze and solve alphanumeric VTOP captchas in the background.
+  - **Dynamic API Key Check**: Verifies key validity dynamically on the profile screen with visual feedback (green checkmark for success, red X with specific error messages for failures).
+  - **Smart Interval Control**: Allows setting periodic intervals (minimum 2 hours) for background sync runs.
+  - **reCaptcha Detection & Recovery**: Detects Google image reCaptcha blocks, automatically cancels the current run to save battery, and reschedules a new attempt 10 seconds later.
+  - **WakeLock Support**: Uses a partial CPU WakeLock to keep background operations alive even when the phone screen is off or in deep sleep (Doze mode).
+
 ---
 
 ## Required Permissions
@@ -44,6 +54,7 @@ For the lock screen UI and background scheduling to work, the following permissi
 2. **Exact Alarms & Reminders**: Essential for triggering timetable slot updates and task reminder notifications precisely on time.
 3. **Notifications**: Required to post task deadline alerts and timetable class changes.
 4. **Device Administrator (Optional)**: Needed only to turn off/lock the screen instantly via a double-tap gesture on the lock screen overlay.
+5. **Wake Lock**: Prevents the phone's CPU from entering low-power sleep while the background sync is actively running.
 
 ---
 
