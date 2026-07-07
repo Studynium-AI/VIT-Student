@@ -58,6 +58,7 @@ public class ProfileItemAdapter extends RecyclerView.Adapter<ProfileItemAdapter.
         public void setProfileItem(ProfileFragment.ItemData profileItem) {
             ImageView icon = this.profileItem.findViewById(R.id.image_view_icon);
             TextView title = this.profileItem.findViewById(R.id.text_view_title);
+            TextView description = this.profileItem.findViewById(R.id.text_view_description);
 
             icon.setImageDrawable(ContextCompat.getDrawable(this.profileItem.getContext(), profileItem.iconId));
             if (profileItem.titleId != 0) {
@@ -65,6 +66,14 @@ public class ProfileItemAdapter extends RecyclerView.Adapter<ProfileItemAdapter.
             } else if (profileItem.title != null) {
                 title.setText(profileItem.title);
             }
+
+            if (profileItem.description != null && !profileItem.description.trim().isEmpty()) {
+                description.setText(profileItem.description);
+                description.setVisibility(View.VISIBLE);
+            } else {
+                description.setVisibility(View.GONE);
+            }
+
             this.profileItem.setOnClickListener(view -> profileItem.onClickListener.onClick(this.profileItem.getContext()));
 
             if (profileItem.onInitListener != null) {

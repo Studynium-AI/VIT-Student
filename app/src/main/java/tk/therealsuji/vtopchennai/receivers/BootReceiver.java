@@ -44,6 +44,12 @@ public class BootReceiver extends BroadcastReceiver {
 
         SettingsRepository.clearNotificationPendingIntents(context);
 
+        // Reschedule Auto-Sync if enabled
+        try {
+            tk.therealsuji.vtopchennai.receivers.AutoSyncReceiver.scheduleNextAutoSync(context);
+        } catch (Exception ignored) {
+        }
+
         AppDatabase appDatabase = AppDatabase.getInstance(context);
         TimetableDao timetableDao = appDatabase.timetableDao();
         ExamsDao examsDao = appDatabase.examsDao();

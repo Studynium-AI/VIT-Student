@@ -90,6 +90,8 @@ public class VTOPService extends Service {
     PageState pageState;
     SharedPreferences sharedPreferences;
     WebView webView;
+    boolean isAutoSync = false;
+    private boolean isSyncSuccess = false;
 
     Map<Integer, Course> theoryCourses, labCourses, projectCourses;
     Map<String, CumulativeMark> cumulativeMarks;
@@ -136,10 +138,12 @@ public class VTOPService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (intent.getAction() != null && intent.getAction().equals(END_SERVICE_ACTION)) {
+        if (intent != null && intent.getAction() != null && intent.getAction().equals(END_SERVICE_ACTION)) {
             this.endService(true);
             this.notificationManager.cancel(SettingsRepository.NOTIFICATION_ID_VTOP_DOWNLOAD);  // In case the notification isn't removed for some reason
         } else {
+            this.isAutoSync = intent != null && intent.getBooleanExtra("is_auto_sync", false);
+
             this.startForeground(SettingsRepository.NOTIFICATION_ID_VTOP_DOWNLOAD, this.notification.build());
 
             this.counter = 0;
@@ -312,6 +316,17 @@ public class VTOPService extends Service {
         stopSelf();
         stopForeground(true);
 
+        if (this.isAutoSync) {
+            SharedPreferences.Editor editor = this.sharedPreferences.edit();
+            editor.putLong("auto_sync_last_time", Calendar.getInstance().getTimeInMillis());
+            if (this.isSyncSuccess) {
+                editor.putString("auto_sync_last_status", "Success");
+            } else {
+                editor.putString("auto_sync_last_status", "Failed");
+            }
+            editor.apply();
+        }
+
         try {
             this.callback.onServiceEnd();
         } catch (Exception ignored) {
@@ -465,10 +480,14 @@ public class VTOPService extends Service {
                 byte[] decodedString = Base64.decode(base64Captcha, Base64.DEFAULT);
                 Bitmap decodedImage = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
 
-                try {
-                    this.callback.onRequestCaptcha(CAPTCHA_DEFAULT, decodedImage, null);
-                } catch (Exception ignored) {
-                    this.endService(true);
+                if (this.isAutoSync) {
+                    solveCaptchaWithGemini(base64Captcha);
+                } else {
+                    try {
+                        this.callback.onRequestCaptcha(CAPTCHA_DEFAULT, decodedImage, null);
+                    } catch (Exception ignored) {
+                        this.endService(true);
+                    }
                 }
             } catch (Exception e) {
                 error(105, e.getLocalizedMessage());
@@ -691,7 +710,20 @@ public class VTOPService extends Service {
                     this.notificationManager.notify(SettingsRepository.NOTIFICATION_ID_VTOP_DOWNLOAD, notification.build());
 
                     String[] semesters = this.semesters.keySet().toArray(new String[0]);
-                    this.callback.onRequestSemester(semesters);
+                    if (this.isAutoSync) {
+                        String semester = this.sharedPreferences.getString("semester", null);
+                        if (semester != null && this.semesters.containsKey(semester)) {
+                            this.setSemester(semester);
+                        } else {
+                            if (semesters.length > 0) {
+                                this.setSemester(semesters[0]);
+                            } else {
+                                this.endService(true);
+                            }
+                        }
+                    } else {
+                        this.callback.onRequestSemester(semesters);
+                    }
                 } catch (Exception ignored) {
                     this.endService(true);
                 }
@@ -2394,6 +2426,8 @@ public class VTOPService extends Service {
         this.sharedPreferences.edit().putBoolean("isVTOPSignedIn", true).apply();
         this.sharedPreferences.edit().putLong("lastRefreshed", Calendar.getInstance().getTimeInMillis()).apply();
 
+        this.isSyncSuccess = true;
+
         // Firebase Analytics Logging
         FirebaseAnalytics.getInstance(this).logEvent("data_sync", new Bundle());
 
@@ -2587,6 +2621,91 @@ public class VTOPService extends Service {
 
         public void setCallback(Callback mCallback) {
             callback = mCallback;
+        }
+    }
+
+    private void solveCaptchaWithGemini(final String base64Captcha) {
+        final String apiKey = this.sharedPreferences.getString("gemini_api_key", "");
+        if (apiKey.isEmpty()) {
+            error(901, "Gemini API key is missing.");
+            endService(true);
+            return;
+        }
+
+        io.reactivex.rxjava3.core.Single.fromCallable(() -> {
+            return performGeminiCaptchaCall(base64Captcha, apiKey);
+        })
+        .subscribeOn(Schedulers.io())
+        .observeOn(AndroidSchedulers.mainThread())
+        .subscribe(captchaResult -> {
+            if (captchaResult != null && !captchaResult.trim().isEmpty()) {
+                signIn(captchaResult.trim());
+            } else {
+                error(902, "Gemini returned empty or invalid text.");
+                endService(true);
+            }
+        }, throwable -> {
+            error(903, "Gemini API error: " + throwable.getLocalizedMessage());
+            endService(true);
+        });
+    }
+
+    private String performGeminiCaptchaCall(String base64Image, String apiKey) throws Exception {
+        okhttp3.OkHttpClient client = new okhttp3.OkHttpClient.Builder()
+                .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+                .readTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+                .build();
+
+        JSONObject jsonPayload = new JSONObject();
+        JSONArray contents = new JSONArray();
+        JSONObject contentObj = new JSONObject();
+        JSONArray parts = new JSONArray();
+        
+        JSONObject imagePart = new JSONObject();
+        JSONObject inlineData = new JSONObject();
+        inlineData.put("mimeType", "image/png");
+        inlineData.put("data", base64Image);
+        imagePart.put("inlineData", inlineData);
+        parts.put(imagePart);
+        
+        JSONObject textPart = new JSONObject();
+        textPart.put("text", "Extract all text from this image. Output ONLY the extracted text, no explanations, formatting, or extra characters.");
+        parts.put(textPart);
+        
+        contentObj.put("parts", parts);
+        contents.put(contentObj);
+        jsonPayload.put("contents", contents);
+
+        okhttp3.RequestBody body = okhttp3.RequestBody.create(
+                jsonPayload.toString(),
+                okhttp3.MediaType.parse("application/json; charset=utf-8")
+        );
+
+        String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
+
+        okhttp3.Request request = new okhttp3.Request.Builder()
+                .url(url)
+                .post(body)
+                .build();
+
+        try (okhttp3.Response response = client.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                throw new Exception("HTTP Error: " + response.code() + " " + response.message());
+            }
+            
+            String responseBody = response.body() != null ? response.body().string() : "";
+            JSONObject responseJson = new JSONObject(responseBody);
+            
+            JSONArray candidates = responseJson.getJSONArray("candidates");
+            if (candidates.length() > 0) {
+                JSONObject candidate = candidates.getJSONObject(0);
+                JSONObject content = candidate.getJSONObject("content");
+                JSONArray resParts = content.getJSONArray("parts");
+                if (resParts.length() > 0) {
+                    return resParts.getJSONObject(0).getString("text").trim();
+                }
+            }
+            throw new Exception("Failed to parse Gemini response.");
         }
     }
 

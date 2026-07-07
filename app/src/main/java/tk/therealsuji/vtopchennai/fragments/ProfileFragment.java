@@ -12,6 +12,12 @@ import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.Spinner;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.text.TextWatcher;
+import android.text.Editable;
+import android.widget.ArrayAdapter;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.StringRes;
@@ -20,6 +26,11 @@ import androidx.appcompat.app.AppCompatDelegate;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.recyclerview.widget.RecyclerView;
+
+import io.reactivex.rxjava3.schedulers.Schedulers;
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -96,6 +107,13 @@ public class ProfileFragment extends Fragment {
                             }
                         });
                     }
+            ),
+            new ItemData(
+                    R.drawable.ic_sync,
+                    "Auto-Sync Data",
+                    "Auto-Sync is disabled",
+                    context -> showAutoSyncSettingsDialog(context),
+                    profileItem -> setupAutoSyncInit(profileItem)
             )
     };
 
@@ -421,6 +439,233 @@ public class ProfileFragment extends Fragment {
             )
     };
 
+    private View autoSyncProfileItemView = null;
+
+    private void setupAutoSyncInit(View profileItem) {
+        autoSyncProfileItemView = profileItem;
+        Context context = profileItem.getContext();
+        RelativeLayout extraContainer = profileItem.findViewById(R.id.relative_layout_extra_container);
+        extraContainer.removeAllViews();
+
+        com.google.android.material.materialswitch.MaterialSwitch toggle = new com.google.android.material.materialswitch.MaterialSwitch(context);
+        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT,
+                RelativeLayout.LayoutParams.WRAP_CONTENT
+        );
+        params.addRule(RelativeLayout.CENTER_IN_PARENT);
+        toggle.setLayoutParams(params);
+
+        SharedPreferences prefs = SettingsRepository.getSharedPreferences(context);
+        toggle.setChecked(prefs.getBoolean("auto_sync_enabled", false));
+
+        toggle.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            prefs.edit().putBoolean("auto_sync_enabled", isChecked).apply();
+            if (isChecked) {
+                String apiKey = prefs.getString("gemini_api_key", "");
+                if (apiKey.isEmpty()) {
+                    buttonView.setChecked(false);
+                    prefs.edit().putBoolean("auto_sync_enabled", false).apply();
+                    Toast.makeText(context, "Please configure Gemini API key first", Toast.LENGTH_LONG).show();
+                    showAutoSyncSettingsDialog(context);
+                } else {
+                    tk.therealsuji.vtopchennai.receivers.AutoSyncReceiver.scheduleNextAutoSync(context);
+                    Toast.makeText(context, "Auto-Sync Enabled", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                tk.therealsuji.vtopchennai.receivers.AutoSyncReceiver.cancelAutoSync(context);
+                Toast.makeText(context, "Auto-Sync Disabled", Toast.LENGTH_SHORT).show();
+            }
+            updateAutoSyncStatusText(profileItem);
+        });
+
+        extraContainer.addView(toggle);
+        extraContainer.setVisibility(View.VISIBLE);
+
+        updateAutoSyncStatusText(profileItem);
+    }
+
+    private void updateAutoSyncStatusText(View profileItem) {
+        if (profileItem == null) return;
+        TextView description = profileItem.findViewById(R.id.text_view_description);
+        SharedPreferences prefs = SettingsRepository.getSharedPreferences(profileItem.getContext());
+        boolean enabled = prefs.getBoolean("auto_sync_enabled", false);
+
+        if (!enabled) {
+            description.setText("Auto-Sync is disabled");
+            description.setVisibility(View.VISIBLE);
+            return;
+        }
+
+        long lastTime = prefs.getLong("auto_sync_last_time", 0);
+        String lastStatus = prefs.getString("auto_sync_last_status", "");
+
+        if (lastTime == 0) {
+            description.setText("Last sync: Never");
+        } else {
+            CharSequence relativeTime = android.text.format.DateUtils.getRelativeTimeSpanString(
+                    lastTime,
+                    System.currentTimeMillis(),
+                    android.text.format.DateUtils.MINUTE_IN_MILLIS
+            );
+            String statusSuffix = lastStatus.isEmpty() ? "" : " (" + lastStatus + ")";
+            description.setText("Last sync: " + relativeTime + statusSuffix);
+        }
+        description.setVisibility(View.VISIBLE);
+    }
+
+    private void showAutoSyncSettingsDialog(Context context) {
+        SharedPreferences prefs = SettingsRepository.getSharedPreferences(context);
+        View view = getLayoutInflater().inflate(R.layout.layout_dialog_auto_sync, null);
+
+        EditText etApiKey = view.findViewById(R.id.et_api_key);
+        ImageView ivStatus = view.findViewById(R.id.iv_api_status);
+        TextView tvError = view.findViewById(R.id.tv_api_error);
+        Spinner spinner = view.findViewById(R.id.spinner_interval);
+
+        String currentApiKey = prefs.getString("gemini_api_key", "");
+        etApiKey.setText(currentApiKey);
+
+        String[] intervals = {"2 hours", "4 hours", "6 hours", "8 hours", "12 hours"};
+        Integer[] intervalHours = {2, 4, 6, 8, 12};
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(context, android.R.layout.simple_spinner_item, intervals);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(adapter);
+
+        int currentInterval = prefs.getInt("auto_sync_interval_hours", 2);
+        int selectedIndex = 0;
+        for (int i = 0; i < intervalHours.length; i++) {
+            if (intervalHours[i] == currentInterval) {
+                selectedIndex = i;
+                break;
+            }
+        }
+        spinner.setSelection(selectedIndex);
+
+        if (!currentApiKey.isEmpty()) {
+            validateGeminiApiKey(currentApiKey, ivStatus, tvError);
+        }
+
+        final android.os.Handler handler = new android.os.Handler(android.os.Looper.getMainLooper());
+        final Runnable[] runnable = {null};
+
+        etApiKey.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (runnable[0] != null) {
+                    handler.removeCallbacks(runnable[0]);
+                }
+                runnable[0] = () -> validateGeminiApiKey(s.toString(), ivStatus, tvError);
+                handler.postDelayed(runnable[0], 800);
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+
+        new MaterialAlertDialogBuilder(context)
+                .setTitle("Auto-Sync Settings")
+                .setView(view)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.submit, (dialog, which) -> {
+                    String newKey = etApiKey.getText().toString().trim();
+                    int newInterval = intervalHours[spinner.getSelectedItemPosition()];
+
+                    prefs.edit()
+                            .putString("gemini_api_key", newKey)
+                            .putInt("auto_sync_interval_hours", newInterval)
+                            .apply();
+
+                    if (prefs.getBoolean("auto_sync_enabled", false)) {
+                        tk.therealsuji.vtopchennai.receivers.AutoSyncReceiver.scheduleNextAutoSync(context);
+                    }
+                    if (autoSyncProfileItemView != null) {
+                        updateAutoSyncStatusText(autoSyncProfileItemView);
+                    }
+                    Toast.makeText(context, "Settings saved", Toast.LENGTH_SHORT).show();
+                })
+                .show();
+    }
+
+    private void validateGeminiApiKey(String apiKey, ImageView ivStatus, TextView tvError) {
+        if (apiKey == null || apiKey.trim().isEmpty()) {
+            ivStatus.setVisibility(View.GONE);
+            tvError.setVisibility(View.GONE);
+            return;
+        }
+
+        io.reactivex.rxjava3.core.Single.fromCallable(() -> {
+            okhttp3.OkHttpClient client = new okhttp3.OkHttpClient.Builder()
+                    .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+                    .readTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+                    .build();
+
+            JSONObject jsonPayload = new JSONObject();
+            JSONArray contents = new JSONArray();
+            JSONObject contentObj = new JSONObject();
+            JSONArray parts = new JSONArray();
+            JSONObject textPart = new JSONObject();
+            textPart.put("text", "Hello");
+            parts.put(textPart);
+            contentObj.put("parts", parts);
+            contents.put(contentObj);
+            jsonPayload.put("contents", contents);
+
+            okhttp3.RequestBody body = okhttp3.RequestBody.create(
+                    jsonPayload.toString(),
+                    okhttp3.MediaType.parse("application/json; charset=utf-8")
+            );
+
+            String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey;
+
+            okhttp3.Request request = new okhttp3.Request.Builder()
+                    .url(url)
+                    .post(body)
+                    .build();
+
+            try (okhttp3.Response response = client.newCall(request).execute()) {
+                String responseBody = response.body() != null ? response.body().string() : "";
+                if (response.isSuccessful()) {
+                    return "SUCCESS";
+                } else {
+                    try {
+                        JSONObject errJson = new JSONObject(responseBody);
+                        JSONObject err = errJson.getJSONObject("error");
+                        return "ERROR: " + err.getString("message");
+                    } catch (Exception ignored) {
+                        return "ERROR: " + response.code() + " " + response.message();
+                    }
+                }
+            }
+        })
+        .subscribeOn(Schedulers.io())
+        .observeOn(AndroidSchedulers.mainThread())
+        .subscribe(result -> {
+            if ("SUCCESS".equals(result)) {
+                ivStatus.setVisibility(View.VISIBLE);
+                ivStatus.setImageResource(R.drawable.ic_done);
+                ivStatus.setImageTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.GREEN));
+                tvError.setVisibility(View.GONE);
+            } else {
+                ivStatus.setVisibility(View.VISIBLE);
+                ivStatus.setImageResource(R.drawable.ic_close);
+                ivStatus.setImageTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.RED));
+                tvError.setVisibility(View.VISIBLE);
+                tvError.setText(result.replace("ERROR: ", ""));
+                tvError.setTextColor(android.graphics.Color.RED);
+            }
+        }, throwable -> {
+            ivStatus.setVisibility(View.VISIBLE);
+            ivStatus.setImageResource(R.drawable.ic_close);
+            ivStatus.setImageTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.RED));
+            tvError.setVisibility(View.VISIBLE);
+            tvError.setText("Error: " + throwable.getLocalizedMessage());
+            tvError.setTextColor(android.graphics.Color.RED);
+        });
+    }
+
     public ProfileFragment() {
         // Required empty public constructor
     }
@@ -491,7 +736,8 @@ public class ProfileFragment extends Fragment {
 
     public static class ItemData {
         public final int iconId, titleId;
-        public final String title, description;
+        public final String title;
+        public String description;
         public final OnClickListener onClickListener;
         public final OnInitListener onInitListener;
 
@@ -513,6 +759,16 @@ public class ProfileFragment extends Fragment {
 
             this.titleId = 0;
             this.onInitListener = null;
+        }
+
+        public ItemData(@DrawableRes int iconId, String title, String description, OnClickListener onClickListener, OnInitListener onInitListener) {
+            this.iconId = iconId;
+            this.title = title;
+            this.description = description;
+            this.onClickListener = onClickListener;
+            this.onInitListener = onInitListener;
+
+            this.titleId = 0;
         }
 
         public interface OnClickListener {
