@@ -500,6 +500,16 @@ public class VTOPService extends Service {
      * Function to override the default onSubmit function and execute the captcha.
      */
     private void executeCaptcha() {
+        if (this.isAutoSync) {
+            SharedPreferences.Editor editor = this.sharedPreferences.edit();
+            editor.putString("auto_sync_last_status", "Failed: reCaptcha block. Retrying...");
+            editor.apply();
+
+            triggerReSyncAfterDelay();
+            this.endService(true);
+            return;
+        }
+
         try {
             this.callback.onRequestCaptcha(CAPTCHA_GRECATPCHA, null, this.webView);
         } catch (Exception ignored) {
@@ -523,6 +533,29 @@ public class VTOPService extends Service {
                 "}, 500);" +
                 "})();", value -> {
         });
+    }
+
+    private void triggerReSyncAfterDelay() {
+        android.app.AlarmManager am = (android.app.AlarmManager) getSystemService(android.content.Context.ALARM_SERVICE);
+        if (am == null) return;
+
+        android.content.Intent intent = new android.content.Intent(this, tk.therealsuji.vtopchennai.receivers.AutoSyncReceiver.class);
+        intent.setAction(tk.therealsuji.vtopchennai.receivers.AutoSyncReceiver.ACTION_TRIGGER_AUTO_SYNC);
+
+        android.app.PendingIntent pi = android.app.PendingIntent.getBroadcast(
+                this,
+                999,
+                intent,
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT | (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M ? android.app.PendingIntent.FLAG_IMMUTABLE : 0)
+        );
+
+        long triggerAtMillis = System.currentTimeMillis() + 10000L; // Retry in 10 seconds
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            am.setAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, triggerAtMillis, pi);
+        } else {
+            am.set(android.app.AlarmManager.RTC_WAKEUP, triggerAtMillis, pi);
+        }
     }
 
     /**
