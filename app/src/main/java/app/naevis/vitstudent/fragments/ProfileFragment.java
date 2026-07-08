@@ -40,7 +40,7 @@ import com.google.firebase.analytics.FirebaseAnalytics;
 import app.naevis.vitstudent.R;
 import app.naevis.vitstudent.helpers.UpdateChecker;
 import app.naevis.vitstudent.fragments.dialogs.UpdateDialogFragment;
-import app.naevis.vitstudent.fragments.dialogs.LogDialogFragment;
+import app.naevis.vitstudent.activities.LogsActivity;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import app.naevis.vitstudent.activities.LoginActivity;
@@ -406,8 +406,8 @@ public class ProfileFragment extends Fragment {
                     "Sync Logs",
                     "View background and manual synchronization logs",
                     context -> {
-                        FragmentManager fragmentManager = ((FragmentActivity) context).getSupportFragmentManager();
-                        new LogDialogFragment().show(fragmentManager, "LogDialogFragment");
+                        Intent logsIntent = new Intent(context, LogsActivity.class);
+                        context.startActivity(logsIntent);
                     }
             ),
             new ItemData(

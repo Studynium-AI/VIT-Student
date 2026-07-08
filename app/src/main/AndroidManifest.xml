@@ -63,6 +63,10 @@
             android:name=".activities.WebViewActivity"
             android:theme="@style/Theme.VTOP"
             android:exported="false" />
+        <activity
+            android:name=".activities.LogsActivity"
+            android:theme="@style/Theme.VTOP"
+            android:exported="false" />
 
         <service
             android:name=".services.VTOPService"

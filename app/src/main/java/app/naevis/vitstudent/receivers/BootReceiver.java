@@ -34,10 +34,14 @@ public class BootReceiver extends BroadcastReceiver {
             app.naevis.vitstudent.lockscreen.ScheduleHelper.rescheduleAlarms(context);
             if (app.naevis.vitstudent.lockscreen.ScheduleHelper.isWithinScheduleWindow(context)) {
                 Intent serviceIntent = new Intent(context, app.naevis.vitstudent.lockscreen.LockScreenService.class);
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                    context.startForegroundService(serviceIntent);
-                } else {
-                    context.startService(serviceIntent);
+                try {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        context.startForegroundService(serviceIntent);
+                    } else {
+                        context.startService(serviceIntent);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
             }
         }

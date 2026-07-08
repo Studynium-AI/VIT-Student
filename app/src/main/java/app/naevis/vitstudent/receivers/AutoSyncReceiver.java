@@ -22,10 +22,14 @@ public class AutoSyncReceiver extends BroadcastReceiver {
             Intent serviceIntent = new Intent(context, VTOPService.class);
             serviceIntent.putExtra("is_auto_sync", true);
             
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(serviceIntent);
-            } else {
-                context.startService(serviceIntent);
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(serviceIntent);
+                } else {
+                    context.startService(serviceIntent);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
 
             // Schedule the next alarm
@@ -59,8 +63,14 @@ public class AutoSyncReceiver extends BroadcastReceiver {
 
         long triggerAtMillis = System.currentTimeMillis() + intervalMillis;
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (am.canScheduleExactAlarms()) {
+                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi);
+            } else {
+                am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi);
+            }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi);
         } else {
             am.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi);
         }

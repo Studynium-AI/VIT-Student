@@ -87,23 +87,25 @@ public class UpdateChecker {
                         || bodyLower.contains("[critical]") || bodyLower.contains("[force]");
 
                 // Extract the download URL of the first .apk asset
-                String downloadUrl = null;
+                String apkUrl = null;
                 JSONArray assets = releaseJson.optJSONArray("assets");
                 if (assets != null) {
                     for (int i = 0; i < assets.length(); i++) {
                         JSONObject asset = assets.getJSONObject(i);
                         String assetName = asset.optString("name", "");
                         if (assetName.endsWith(".apk")) {
-                            downloadUrl = asset.optString("browser_download_url", null);
+                            apkUrl = asset.optString("browser_download_url", null);
                             break;
                         }
                     }
                 }
 
-                if (tagName.isEmpty() || downloadUrl == null) {
+                if (tagName.isEmpty() || apkUrl == null) {
                     Log.w(TAG, "No valid tag name or APK asset found in the latest release.");
                     return new UpdateInfo(false, null, null, null, false);
                 }
+
+                String downloadUrl = releaseJson.optString("html_url", "https://github.com/Studynium-AI/VIT-Student/releases/latest");
 
                 boolean isNewer = isNewerVersion(BuildConfig.VERSION_NAME, tagName);
                 boolean isSkipped = prefs.getString("skipped_update_version", "").equals(tagName);

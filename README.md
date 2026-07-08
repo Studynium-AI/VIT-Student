@@ -46,6 +46,16 @@ This edition introduces several major features focused on lock screen integratio
   - **reCaptcha Detection & Recovery**: Detects Google image reCaptcha blocks, automatically cancels the current run to save battery, and reschedules a new attempt 10 seconds later.
   - **WakeLock Support**: Uses a partial CPU WakeLock to keep background operations alive even when the phone screen is off or in deep sleep (Doze mode).
 
+### 6. Redirection-based App Updates
+* **What it is**: An improved update workflow that informs the user of a new release and redirects them to the official GitHub releases page in their device web browser when clicking the download button.
+
+### 7. Dedicated Full-Screen Sync Logs Screen
+* **What it is**: A dedicated full-screen logs activity that replaces the old pop-up dialog, built to perfectly match the app's overall Material Design theme.
+* **Key Features**:
+  - **Status Indicators**: Clean green and red check/cross labels indicating SUCCESS or FAILURE of background sync runs.
+  - **Quick Clear**: One-tap action to clear all local synchronization logs from the device.
+  - **Back Navigation**: Quick chevron-left back button that complies with the native Android back navigation.
+
 ---
 
 ## Required Permissions

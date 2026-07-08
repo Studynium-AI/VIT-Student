@@ -1,22 +1,18 @@
-package app.naevis.vitstudent.fragments.dialogs;
+package app.naevis.vitstudent.activities;
 
-import android.app.Dialog;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.widget.TextView;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.DialogFragment;
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.firebase.analytics.FirebaseAnalytics;
 
 import app.naevis.vitstudent.R;
 import app.naevis.vitstudent.helpers.SettingsRepository;
@@ -25,64 +21,48 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
-public class LogDialogFragment extends DialogFragment {
+public class LogsActivity extends AppCompatActivity {
 
     private ListView listView;
     private TextView tvEmpty;
 
     @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setStyle(DialogFragment.STYLE_NORMAL, com.google.android.material.R.style.ThemeOverlay_Material3_MaterialAlertDialog_Centered);
-    }
+        setContentView(R.layout.layout_dialog_logs);
 
-    @NonNull
-    @Override
-    public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
-        Dialog dialog = super.onCreateDialog(savedInstanceState);
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        return dialog;
-    }
-
-    @Override
-    public void onStart() {
-        super.onStart();
-        Dialog dialog = getDialog();
-        if (dialog != null && dialog.getWindow() != null) {
-            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-            dialog.getWindow().setWindowAnimations(android.R.style.Animation_Dialog);
-        }
-    }
-
-    @Nullable
-    @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.layout_dialog_logs, container, false);
-
-        MaterialToolbar toolbar = view.findViewById(R.id.toolbar_logs);
-        toolbar.setNavigationOnClickListener(v -> dismiss());
+        MaterialToolbar toolbar = findViewById(R.id.toolbar_logs);
+        toolbar.setNavigationOnClickListener(v -> finish());
         toolbar.inflateMenu(R.menu.menu_logs);
         toolbar.setOnMenuItemClickListener(item -> {
             if (item.getItemId() == R.id.action_clear_logs) {
-                SharedPreferences prefs = SettingsRepository.getSharedPreferences(requireContext());
+                SharedPreferences prefs = SettingsRepository.getSharedPreferences(this);
                 prefs.edit().remove("sync_logs_json").apply();
                 loadLogs();
-                Toast.makeText(requireContext(), "Logs cleared.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Logs cleared.", Toast.LENGTH_SHORT).show();
                 return true;
             }
             return false;
         });
 
-        listView = view.findViewById(R.id.list_view_logs);
-        tvEmpty = view.findViewById(R.id.tv_empty_logs);
+        listView = findViewById(R.id.list_view_logs);
+        tvEmpty = findViewById(R.id.tv_empty_logs);
 
         loadLogs();
+    }
 
-        return view;
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Firebase Analytics Logging
+        Bundle bundle = new Bundle();
+        bundle.putString(FirebaseAnalytics.Param.SCREEN_CLASS, "LogsActivity");
+        bundle.putString(FirebaseAnalytics.Param.SCREEN_NAME, "Sync Logs");
+        FirebaseAnalytics.getInstance(this).logEvent(FirebaseAnalytics.Event.SCREEN_VIEW, bundle);
     }
 
     private void loadLogs() {
-        SharedPreferences prefs = SettingsRepository.getSharedPreferences(requireContext());
+        SharedPreferences prefs = SettingsRepository.getSharedPreferences(this);
         String logsJson = prefs.getString("sync_logs_json", "[]");
         List<LogItem> logList = new ArrayList<>();
 
@@ -150,7 +130,7 @@ public class LogDialogFragment extends DialogFragment {
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
             if (convertView == null) {
-                convertView = LayoutInflater.from(requireContext()).inflate(R.layout.layout_item_log, parent, false);
+                convertView = LayoutInflater.from(LogsActivity.this).inflate(R.layout.layout_item_log, parent, false);
             }
 
             LogItem item = items.get(position);

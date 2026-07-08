@@ -153,7 +153,15 @@ public class VTOPService extends Service {
                 }
             }
 
-            this.startForeground(SettingsRepository.NOTIFICATION_ID_VTOP_DOWNLOAD, this.notification.build());
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                this.startForeground(
+                        SettingsRepository.NOTIFICATION_ID_VTOP_DOWNLOAD,
+                        this.notification.build(),
+                        android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                );
+            } else {
+                this.startForeground(SettingsRepository.NOTIFICATION_ID_VTOP_DOWNLOAD, this.notification.build());
+            }
 
             this.counter = 0;
             this.maxProgress = 12;

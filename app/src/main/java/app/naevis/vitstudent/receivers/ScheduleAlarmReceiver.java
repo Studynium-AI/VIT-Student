@@ -27,10 +27,14 @@ public class ScheduleAlarmReceiver extends BroadcastReceiver {
         if (action.equals(ScheduleHelper.ACTION_SCHEDULE_START)) {
             if (serviceEnabled && ScheduleHelper.isScheduleEnabled(context)) {
                 Intent serviceIntent = new Intent(context, LockScreenService.class);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    context.startForegroundService(serviceIntent);
-                } else {
-                    context.startService(serviceIntent);
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        context.startForegroundService(serviceIntent);
+                    } else {
+                        context.startService(serviceIntent);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
             }
             rescheduleNextDay(
