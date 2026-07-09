@@ -18,13 +18,27 @@ This edition introduces several major features focused on lock screen integratio
   - Clicking any class card expands it to reveal details (faculty, venue) and list any custom tasks/deadlines for that course.
   - Once the user successfully unlocks the device, the overlay automatically finishes.
 
+<p align="center">
+  <img src="images/Screenshot_20260709-111532.VIT%20Student.png" width="270" height="600" alt="Lock Screen UI Overlay" />
+</p>
+
 ### 2. Task & Deadline Management
 * **Create & View Tasks**: You can set custom tasks, assignments, or deadlines for individual subjects. 
 * **Dynamic Integration**: Tasks can be created directly inside the app (via timetable and course detail bottom sheets) or from the lock screen overlay itself.
 * **Alert Notifications**: When a task's start time is reached, the app schedules an exact alarm to post a notification reminder to ensure deadlines are never missed.
 
+<p align="center">
+  <img src="images/Screenshot_20260709-093812.VIT%20Student.jpeg" width="270" height="600" alt="Tasks and Deadlines" />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="images/WhatsApp%20Image%202026-07-09%20at%2011.16.19%20PM.jpeg" width="270" height="600" alt="Class Bottom Sheet & Tasks" />
+</p>
+
 ### 3. Lock Screen Scheduling (Time Windows)
 * **Custom Time Window**: You can schedule the active window during which the lock screen overlay is allowed to show (e.g. from 8:00 AM to 6:00 PM). Outside this scheduled window, the overlay will remain disabled to prevent disturbance.
+
+<p align="center">
+  <img src="images/WhatsApp%20Image%202026-07-09%20at%2011.17.50%20PM.jpeg" width="270" height="600" alt="Lock Screen Scheduling Settings" />
+</p>
 
 ### 4. Course-Specific Notes
 * **What it is**: A dedicated note-taking space for every course, letting you write instructions and insert images (such as class slides, blackboard drawings, or guidelines) right inside the app or directly over your lock screen.
@@ -36,14 +50,21 @@ This edition introduces several major features focused on lock screen integratio
   - **Undo Guard**: If you accidentally delete an image, a 7-second "Undo" bar allows you to restore it instantly.
   - **Auto-Save**: Everything you type is automatically saved in the background, ensuring no notes are ever lost.
 
-### 5. Google Gemini Auto-Sync & Captcha Solver
-* **What it is**: A fully automated background synchronization engine that periodically updates class timetable and attendance data without any manual intervention.
+<p align="center">
+  <img src="images/Screenshot_20260709-111304.VIT%20Student.png" width="270" height="600" alt="Course-Specific Notes" />
+</p>
+
+### 5. Google Gemini Auto-Sync & Captcha Solver `[UNDER DEVELOPMENT / EXPERIMENTAL]`
+> [!WARNING]
+> **Under Development:** The background CAPTCHA solving engine and auto reCAPTCHA handling are currently in an experimental phase and undergoing active development due to portal verification changes. You may experience connection or synchronization issues.
+
+* **What it is**: A background synchronization engine intended to periodically update class timetable and attendance data without manual intervention.
 * **Why we built it (Logical Reason)**: Academic portals often log you out or require fresh data refreshes. Manually solving captchas every time you want to check your latest timetable is tedious. By automating the process, the app stays updated in the background, making your lock screen timetable immediately accurate when you wake up your phone.
 * **Key Features**:
-  - **Gemini Captcha Solver**: Uses a Google Gemini API Key (`gemini-2.5-flash` model) to analyze and solve alphanumeric VTOP captchas in the background.
-  - **Dynamic API Key Check**: Verifies key validity dynamically on the profile screen with visual feedback (green checkmark for success, red X with specific error messages for failures).
+  - **Gemini Captcha Solver `[Under Development]`**: Uses a Google Gemini API Key (`gemini-2.5-flash` model) to analyze and solve alphanumeric VTOP captchas in the background.
+  - **Dynamic API Key Check `[Under Development]`**: Verifies key validity dynamically on the profile screen with visual feedback (green checkmark for success, red X with specific error messages for failures).
   - **Smart Interval Control**: Allows setting periodic intervals (minimum 2 hours) for background sync runs.
-  - **reCaptcha Detection & Recovery**: Detects Google image reCaptcha blocks, automatically cancels the current run to save battery, and reschedules a new attempt 10 seconds later.
+  - **reCaptcha Detection & Recovery `[Under Development]`**: Detects Google image reCaptcha blocks, automatically cancels the current run to save battery, and reschedules a new attempt 10 seconds later.
   - **WakeLock Support**: Uses a partial CPU WakeLock to keep background operations alive even when the phone screen is off or in deep sleep (Doze mode).
 
 ### 6. Redirection-based App Updates
