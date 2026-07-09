@@ -30,9 +30,9 @@ This edition introduces several major features focused on lock screen integratio
 * **Alert Notifications**: When a task's start time is reached, the app schedules an exact alarm to post a notification reminder to ensure deadlines are never missed.
 
 <p align="center">
-  <img src="images/Screenshot_20260709-093812.VIT%20Student.jpeg" width="270" height="600" alt="Tasks and Deadlines" />
-  &nbsp;&nbsp;&nbsp;&nbsp;
   <img src="images/WhatsApp%20Image%202026-07-09%20at%2011.16.19%20PM.jpeg" width="270" height="600" alt="Class Bottom Sheet & Tasks" />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="images/Screenshot_20260709-093812.VIT%20Student.jpeg" width="270" height="600" alt="Tasks and Deadlines" />
 </p>
 
 ### 3. Lock Screen Scheduling (Time Windows)
