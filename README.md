@@ -19,7 +19,9 @@ This edition introduces several major features focused on lock screen integratio
   - Once the user successfully unlocks the device, the overlay automatically finishes.
 
 <p align="center">
-  <img src="images/Screenshot_20260709-111532.VIT%20Student.png" width="270" height="600" alt="Lock Screen UI Overlay" />
+  <img src="images/Screenshot_20260709-111532.VIT%20Student.png" width="270" height="600" alt="Lock Screen UI Overlay (Collapsed)" />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="images/lockscreenui_2.png" width="270" height="600" alt="Lock Screen UI Overlay (Expanded)" />
 </p>
 
 ### 2. Task & Deadline Management
