@@ -34,7 +34,8 @@ public class TaskNotificationReceiver extends BroadcastReceiver {
         if (action.equals(ACTION_TASK_REMINDER)) {
             String title = intent.getStringExtra("title");
             String course = intent.getStringExtra("course");
-            showNotification(context, taskId, title, course);
+            int daysRemaining = intent.getIntExtra("days_remaining", -1);
+            showNotification(context, taskId, title, course, daysRemaining);
         } else if (action.equals(ACTION_TASK_COMPLETE)) {
             NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
             manager.cancel(taskId);
@@ -45,6 +46,7 @@ public class TaskNotificationReceiver extends BroadcastReceiver {
                         for (Task t : tasks) {
                             if (t.id == taskId) {
                                 t.isCompleted = true;
+                                app.naevis.vitstudent.helpers.TaskDialogHelper.cancelTaskAlarms(context, taskId, t.isDeadline);
                                 AppDatabase.getInstance(context).tasksDao().delete(t).blockingSubscribe();
                                 break;
                             }
@@ -53,7 +55,7 @@ public class TaskNotificationReceiver extends BroadcastReceiver {
         }
     }
 
-    private void showNotification(Context context, int taskId, String title, String course) {
+    private void showNotification(Context context, int taskId, String title, String course, int daysRemaining) {
         NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -75,10 +77,25 @@ public class TaskNotificationReceiver extends BroadcastReceiver {
         PendingIntent completePendingIntent = PendingIntent.getBroadcast(
                 context, taskId, completeIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
+        String contentTitle;
+        String contentText;
+
+        if (daysRemaining > 0) {
+            contentTitle = (course != null && !course.isEmpty()) ? course + " Deadline Reminder" : "Deadline Reminder";
+            if (daysRemaining == 1) {
+                contentText = "Deadline tomorrow: " + title;
+            } else {
+                contentText = "Deadline in " + daysRemaining + " days: " + title;
+            }
+        } else {
+            contentTitle = (course != null && !course.isEmpty()) ? course + " Task Reminder" : "Task Reminder";
+            contentText = title;
+        }
+
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_clock)
-                .setContentTitle(course != null && !course.isEmpty() ? course + " Task Reminder" : "Task Reminder")
-                .setContentText(title)
+                .setContentTitle(contentTitle)
+                .setContentText(contentText)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true)
                 .setContentIntent(mainPendingIntent)

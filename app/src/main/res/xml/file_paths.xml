@@ -2,4 +2,6 @@
 <paths>
     <external-cache-path name="update_apks" path="." />
     <cache-path name="update_apks_internal" path="." />
+    <cache-path name="course_notes_export" path="CourseNotesExport/" />
+    <files-path name="course_notes_images" path="CourseNotes/" />
 </paths>

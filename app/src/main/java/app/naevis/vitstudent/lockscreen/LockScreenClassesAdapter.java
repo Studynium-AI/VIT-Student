@@ -329,7 +329,7 @@ public class LockScreenClassesAdapter extends RecyclerView.Adapter<LockScreenCla
     }
 
     class ViewHolder extends RecyclerView.ViewHolder {
-        TextView title, time, code, type, attendance, facultyInfo, skippableClasses, statusText, taskBadge;
+        TextView title, time, code, type, attendance, facultyInfo, skippableClasses, statusText, taskBadge, deadlineBadge;
         LinearLayout expandableLayout, cardContent, subDetails, progressSection, tasksSection, tasksContainer;
         MaterialButton addTaskButton, notesButton;
         ProgressBar progressBar;
@@ -356,6 +356,7 @@ public class LockScreenClassesAdapter extends RecyclerView.Adapter<LockScreenCla
             subDetails = itemView.findViewById(R.id.layout_class_sub_details);
             progressSection = itemView.findViewById(R.id.layout_class_progress_section);
             taskBadge = itemView.findViewById(R.id.tv_task_badge);
+            deadlineBadge = itemView.findViewById(R.id.tv_deadline_badge);
             tasksSection = itemView.findViewById(R.id.layout_tasks_section);
             tasksContainer = itemView.findViewById(R.id.layout_tasks_container);
         }
@@ -391,15 +392,42 @@ public class LockScreenClassesAdapter extends RecyclerView.Adapter<LockScreenCla
         private void updateTasksUi(List<Task> activeTasks, boolean isExpanded, boolean isCompleted) {
             if (activeTasks.isEmpty()) {
                 taskBadge.setVisibility(View.GONE);
+                deadlineBadge.setVisibility(View.GONE);
                 tasksSection.setVisibility(View.GONE);
                 tasksContainer.removeAllViews();
             } else {
-                taskBadge.setVisibility(View.VISIBLE);
-                taskBadge.setText(activeTasks.size() + (activeTasks.size() == 1 ? " Task" : " Tasks"));
-                if (isCompleted) {
-                    taskBadge.setTextColor(android.graphics.Color.parseColor("#80FF9F0A"));
+                int taskCount = 0;
+                int deadlineCount = 0;
+                for (Task t : activeTasks) {
+                    if (t.isDeadline) {
+                        deadlineCount++;
+                    } else {
+                        taskCount++;
+                    }
+                }
+
+                if (taskCount > 0) {
+                    taskBadge.setVisibility(View.VISIBLE);
+                    taskBadge.setText(taskCount + (taskCount == 1 ? " Task" : " Tasks"));
+                    if (isCompleted) {
+                        taskBadge.setTextColor(android.graphics.Color.parseColor("#80FF9F0A"));
+                    } else {
+                        taskBadge.setTextColor(android.graphics.Color.parseColor("#FF9F0A"));
+                    }
                 } else {
-                    taskBadge.setTextColor(android.graphics.Color.parseColor("#FF9F0A"));
+                    taskBadge.setVisibility(View.GONE);
+                }
+
+                if (deadlineCount > 0) {
+                    deadlineBadge.setVisibility(View.VISIBLE);
+                    deadlineBadge.setText(deadlineCount + (deadlineCount == 1 ? " Deadline" : " Deadlines"));
+                    if (isCompleted) {
+                        deadlineBadge.setTextColor(android.graphics.Color.parseColor("#80FF2A6D"));
+                    } else {
+                        deadlineBadge.setTextColor(android.graphics.Color.parseColor("#FF2A6D"));
+                    }
+                } else {
+                    deadlineBadge.setVisibility(View.GONE);
                 }
                 
                 if (isExpanded) {
@@ -414,8 +442,21 @@ public class LockScreenClassesAdapter extends RecyclerView.Adapter<LockScreenCla
                         TextView tvTitle = taskItemView.findViewById(R.id.tv_task_small_title);
                         TextView tvDesc = taskItemView.findViewById(R.id.tv_task_small_desc);
                         android.widget.ImageView ivChevron = taskItemView.findViewById(R.id.iv_task_small_chevron);
+                        android.widget.ImageView ivIcon = taskItemView.findViewById(R.id.iv_task_small_icon);
                         
                         tvTitle.setText((i + 1) + ". " + task.title);
+                        if (task.isDeadline) {
+                            tvTitle.setTextColor(android.graphics.Color.parseColor("#FF2A6D"));
+                            if (ivIcon != null) {
+                                ivIcon.setColorFilter(android.graphics.Color.parseColor("#FF2A6D"));
+                            }
+                        } else {
+                            tvTitle.setTextColor(android.graphics.Color.parseColor("#FFFFFF"));
+                            if (ivIcon != null) {
+                                ivIcon.setColorFilter(android.graphics.Color.parseColor("#FF9F0A"));
+                            }
+                        }
+
                         if (task.description != null && !task.description.trim().isEmpty()) {
                             tvDesc.setText(task.description);
                             tvDesc.setVisibility(View.GONE);
@@ -423,13 +464,13 @@ public class LockScreenClassesAdapter extends RecyclerView.Adapter<LockScreenCla
                             ivChevron.setRotation(0);
                             
                             layoutHeader.setOnClickListener(v -> {
-                                if (tvDesc.getVisibility() == View.VISIBLE) {
-                                    tvDesc.setVisibility(View.GONE);
-                                    ivChevron.setRotation(0);
-                                } else {
-                                    tvDesc.setVisibility(View.VISIBLE);
-                                    ivChevron.setRotation(90);
-                                }
+                                    if (tvDesc.getVisibility() == View.VISIBLE) {
+                                        tvDesc.setVisibility(View.GONE);
+                                        ivChevron.setRotation(0);
+                                    } else {
+                                        tvDesc.setVisibility(View.VISIBLE);
+                                        ivChevron.setRotation(90);
+                                    }
                             });
                         } else {
                             tvDesc.setVisibility(View.GONE);

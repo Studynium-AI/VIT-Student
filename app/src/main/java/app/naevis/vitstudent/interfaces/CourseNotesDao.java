@@ -16,4 +16,7 @@ public interface CourseNotesDao {
 
     @Query("SELECT * FROM course_notes WHERE course_code = :courseCode")
     Maybe<CourseNote> getNoteByCourse(String courseCode);
+
+    @Query("SELECT course_code FROM course_notes WHERE content IS NOT NULL AND content != '' AND content != '[]'")
+    io.reactivex.rxjava3.core.Single<java.util.List<String>> getAllNoteCourseCodes();
 }

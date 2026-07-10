@@ -48,28 +48,68 @@ public class TaskDialogHelper {
         CheckBox cbDeadline = dialog.findViewById(R.id.cb_is_deadline);
         Button btnSave = dialog.findViewById(R.id.btn_save_task);
 
+        View layoutTimings = dialog.findViewById(R.id.layout_timings);
+        View layoutDeadlineDate = dialog.findViewById(R.id.layout_deadline_date);
+        TextView tvDeadlineDate = dialog.findViewById(R.id.tv_deadline_date);
+
         Calendar startCal = Calendar.getInstance();
         Calendar endCal = Calendar.getInstance();
         endCal.add(Calendar.HOUR_OF_DAY, 1);
 
+        Calendar deadlineCal = Calendar.getInstance();
+        // Default to end of today
+        deadlineCal.set(Calendar.HOUR_OF_DAY, 23);
+        deadlineCal.set(Calendar.MINUTE, 59);
+        deadlineCal.set(Calendar.SECOND, 59);
+        deadlineCal.set(Calendar.MILLISECOND, 999);
+
         SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a", Locale.getDefault());
+        SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
         tvStartTime.setText(timeFormat.format(startCal.getTime()));
         tvEndTime.setText(timeFormat.format(endCal.getTime()));
+        tvDeadlineDate.setText(dateFormat.format(deadlineCal.getTime()));
 
         tvStartTime.setOnClickListener(v -> {
-            new TimePickerDialog(context, (view, hourOfDay, minute) -> {
-                startCal.set(Calendar.HOUR_OF_DAY, hourOfDay);
-                startCal.set(Calendar.MINUTE, minute);
-                tvStartTime.setText(timeFormat.format(startCal.getTime()));
-            }, startCal.get(Calendar.HOUR_OF_DAY), startCal.get(Calendar.MINUTE), false).show();
+            if (!cbDeadline.isChecked()) {
+                new TimePickerDialog(context, (view, hourOfDay, minute) -> {
+                    startCal.set(Calendar.HOUR_OF_DAY, hourOfDay);
+                    startCal.set(Calendar.MINUTE, minute);
+                    tvStartTime.setText(timeFormat.format(startCal.getTime()));
+                }, startCal.get(Calendar.HOUR_OF_DAY), startCal.get(Calendar.MINUTE), false).show();
+            }
         });
 
         tvEndTime.setOnClickListener(v -> {
-            new TimePickerDialog(context, (view, hourOfDay, minute) -> {
-                endCal.set(Calendar.HOUR_OF_DAY, hourOfDay);
-                endCal.set(Calendar.MINUTE, minute);
-                tvEndTime.setText(timeFormat.format(endCal.getTime()));
-            }, endCal.get(Calendar.HOUR_OF_DAY), endCal.get(Calendar.MINUTE), false).show();
+            if (!cbDeadline.isChecked()) {
+                new TimePickerDialog(context, (view, hourOfDay, minute) -> {
+                    endCal.set(Calendar.HOUR_OF_DAY, hourOfDay);
+                    endCal.set(Calendar.MINUTE, minute);
+                    tvEndTime.setText(timeFormat.format(endCal.getTime()));
+                }, endCal.get(Calendar.HOUR_OF_DAY), endCal.get(Calendar.MINUTE), false).show();
+            }
+        });
+
+        layoutDeadlineDate.setOnClickListener(v -> {
+            new android.app.DatePickerDialog(context, (view, year, month, dayOfMonth) -> {
+                deadlineCal.set(Calendar.YEAR, year);
+                deadlineCal.set(Calendar.MONTH, month);
+                deadlineCal.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+                tvDeadlineDate.setText(dateFormat.format(deadlineCal.getTime()));
+            }, deadlineCal.get(Calendar.YEAR), deadlineCal.get(Calendar.MONTH), deadlineCal.get(Calendar.DAY_OF_MONTH)).show();
+        });
+
+        cbDeadline.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                tvStartTime.setEnabled(false);
+                tvEndTime.setEnabled(false);
+                layoutTimings.setAlpha(0.4f);
+                layoutDeadlineDate.setVisibility(View.VISIBLE);
+            } else {
+                tvStartTime.setEnabled(true);
+                tvEndTime.setEnabled(true);
+                layoutTimings.setAlpha(1.0f);
+                layoutDeadlineDate.setVisibility(View.GONE);
+            }
         });
 
         btnSave.setOnClickListener(v -> {
@@ -85,16 +125,25 @@ public class TaskDialogHelper {
             task.courseCode = courseCode;
             task.title = title;
             task.description = desc;
-            task.startTime = startCal.getTimeInMillis();
-            task.endTime = endCal.getTimeInMillis();
             task.isDeadline = cbDeadline.isChecked();
+            if (task.isDeadline) {
+                task.startTime = System.currentTimeMillis();
+                task.endTime = deadlineCal.getTimeInMillis();
+            } else {
+                task.startTime = startCal.getTimeInMillis();
+                task.endTime = endCal.getTimeInMillis();
+            }
             task.isCompleted = false;
 
             AppDatabase.getInstance(context.getApplicationContext()).tasksDao().insert(task)
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe((taskId) -> {
-                        scheduleTaskAlarm(context, taskId.intValue(), title, courseCode, startCal.getTimeInMillis());
+                        if (task.isDeadline) {
+                            scheduleDeadlineAlarms(context, taskId.intValue(), title, courseCode, task.endTime);
+                        } else {
+                            scheduleTaskAlarm(context, taskId.intValue(), title, courseCode, task.startTime);
+                        }
                         Toast.makeText(context, "Task Added", Toast.LENGTH_SHORT).show();
                         dialog.dismiss();
                         if (onSaved != null) {
@@ -123,6 +172,72 @@ public class TaskDialogHelper {
             alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent);
         } else {
             alarmManager.setExact(android.app.AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent);
+        }
+    }
+
+    public static void scheduleDeadlineAlarms(Context context, int taskId, String title, String courseCode, long deadlineMs) {
+        long now = System.currentTimeMillis();
+        long oneDay = 24 * 60 * 60 * 1000L;
+
+        long oneDayBefore = deadlineMs - oneDay;
+        long threeDaysBefore = deadlineMs - 3 * oneDay;
+        long sevenDaysBefore = deadlineMs - 7 * oneDay;
+
+        if (oneDayBefore > now) {
+            scheduleDeadlineAlarm(context, taskId, title, courseCode, oneDayBefore, 1);
+        }
+        if (threeDaysBefore > now) {
+            scheduleDeadlineAlarm(context, taskId, title, courseCode, threeDaysBefore, 3);
+        }
+        if (sevenDaysBefore > now) {
+            scheduleDeadlineAlarm(context, taskId, title, courseCode, sevenDaysBefore, 7);
+        }
+    }
+
+    private static void scheduleDeadlineAlarm(Context context, int taskId, String title, String courseCode, long timeInMillis, int daysRemaining) {
+        android.app.AlarmManager alarmManager = (android.app.AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        Intent intent = new Intent(context, app.naevis.vitstudent.receivers.TaskNotificationReceiver.class);
+        intent.setAction(app.naevis.vitstudent.receivers.TaskNotificationReceiver.ACTION_TASK_REMINDER);
+        intent.putExtra("taskId", taskId);
+        intent.putExtra("title", title);
+        intent.putExtra("course", courseCode);
+        intent.putExtra("days_remaining", daysRemaining);
+
+        int requestCode = taskId * 10 + daysRemaining;
+
+        android.app.PendingIntent pendingIntent = android.app.PendingIntent.getBroadcast(
+                context, requestCode, intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent);
+        } else {
+            alarmManager.setExact(android.app.AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent);
+        }
+    }
+
+    public static void cancelTaskAlarms(Context context, int taskId, boolean isDeadline) {
+        android.app.AlarmManager alarmManager = (android.app.AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        Intent intent = new Intent(context, app.naevis.vitstudent.receivers.TaskNotificationReceiver.class);
+        intent.setAction(app.naevis.vitstudent.receivers.TaskNotificationReceiver.ACTION_TASK_REMINDER);
+
+        if (isDeadline) {
+            int[] days = {1, 3, 7};
+            for (int d : days) {
+                int requestCode = taskId * 10 + d;
+                android.app.PendingIntent pendingIntent = android.app.PendingIntent.getBroadcast(
+                        context, requestCode, intent, android.app.PendingIntent.FLAG_NO_CREATE | android.app.PendingIntent.FLAG_IMMUTABLE);
+                if (pendingIntent != null) {
+                    alarmManager.cancel(pendingIntent);
+                    pendingIntent.cancel();
+                }
+            }
+        } else {
+            android.app.PendingIntent pendingIntent = android.app.PendingIntent.getBroadcast(
+                    context, taskId, intent, android.app.PendingIntent.FLAG_NO_CREATE | android.app.PendingIntent.FLAG_IMMUTABLE);
+            if (pendingIntent != null) {
+                alarmManager.cancel(pendingIntent);
+                pendingIntent.cancel();
+            }
         }
     }
 
@@ -182,7 +297,7 @@ public class TaskDialogHelper {
 
                             if (task.isDeadline) {
                                 tvTime.setText("Deadline: " + sdf.format(new Date(task.endTime)));
-                                tvTime.setTextColor(context.getResources().getColor(R.color.colorRed));
+                                tvTime.setTextColor(context.getResources().getColor(R.color.colorRedPink));
                             } else {
                                 tvTime.setText(sdf.format(new Date(task.startTime)) + " - " + sdf.format(new Date(task.endTime)));
                                 tvTime.setTextColor(MaterialColors.getColor(tvTime, R.attr.colorOnSurfaceVariant));
@@ -207,6 +322,7 @@ public class TaskDialogHelper {
                             }
 
                             ivComplete.setOnClickListener(v -> {
+                                cancelTaskAlarms(context, task.id, task.isDeadline);
                                 appDatabase.tasksDao().delete(task)
                                         .subscribeOn(Schedulers.io())
                                         .observeOn(AndroidSchedulers.mainThread())

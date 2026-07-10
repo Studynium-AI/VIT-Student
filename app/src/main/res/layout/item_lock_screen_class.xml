@@ -55,6 +55,23 @@
                 android:visibility="gone" />
 
             <TextView
+                android:id="@+id/tv_deadline_badge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
+                android:paddingLeft="6dp"
+                android:paddingRight="6dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:background="@drawable/bg_deadline_badge"
+                android:textColor="#FF2A6D"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:text="1 Deadline"
+                android:visibility="gone" />
+
+            <TextView
                 android:id="@+id/tv_class_time"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -183,7 +200,7 @@
                     android:layout_weight="2.8"
                     android:layout_marginStart="8dp"
                     android:layout_marginEnd="4dp"
-                    android:text="Add Task / Deadline"
+                    android:text="Add Task"
                     android:textColor="?attr/colorPrimary"
                     android:insetLeft="0dp"
                     android:insetRight="0dp"
@@ -200,7 +217,7 @@
                     android:layout_weight="1.2"
                     android:layout_marginStart="4dp"
                     android:layout_marginEnd="8dp"
-                    android:text="Notes"
+                    android:text="Create Note"
                     android:textColor="?attr/colorPrimary"
                     android:insetLeft="0dp"
                     android:insetRight="0dp"

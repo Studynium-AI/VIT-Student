@@ -51,6 +51,9 @@ This edition introduces several major features focused on lock screen integratio
   - **Full-Screen Viewer**: View embedded images in full-screen on click, and go back by pressing the back button.
   - **Undo Guard**: If you accidentally delete an image, a 7-second "Undo" bar allows you to restore it instantly.
   - **Auto-Save**: Everything you type is automatically saved in the background, ensuring no notes are ever lost.
+  - **Export as Markdown**: Share your notes as self-contained `.md` files. Any images in the notes are base64-encoded and embedded inline so that the resulting file is fully portable across any markdown editor.
+  - **Import Markdown**: Import `.md` files. Importing from inside the editor inserts contents at the cursor. Importing from external file managers or share intents prompts a course picker with automatic course detection (matching the header title inside the file or the filename) and appends it to the end of the note.
+  - **Strict Type Validation**: The file picker only allows selecting text/markdown documents and strictly validates the extension, only importing files that end with `.md` or `.markdown`.
 
 <p align="center">
   <img src="images/Screenshot_20260709-111304.VIT%20Student.png" width="270" height="600" alt="Course-Specific Notes" />

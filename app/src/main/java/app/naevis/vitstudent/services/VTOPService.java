@@ -768,7 +768,7 @@ public class VTOPService extends Service {
                 }
 
                 JSONArray semesterArray = response.getJSONArray("semesters");
-                this.semesters = new HashMap<>();
+                this.semesters = new java.util.LinkedHashMap<>();
 
                 for (int i = 0; i < semesterArray.length(); ++i) {
                     JSONObject semesterObject = semesterArray.getJSONObject(i);
@@ -781,15 +781,10 @@ public class VTOPService extends Service {
 
                     String[] semesters = this.semesters.keySet().toArray(new String[0]);
                     if (this.isAutoSync) {
-                        String semester = this.sharedPreferences.getString("semester", null);
-                        if (semester != null && this.semesters.containsKey(semester)) {
-                            this.setSemester(semester);
+                        if (semesters.length > 0) {
+                            this.setSemester(semesters[0]);
                         } else {
-                            if (semesters.length > 0) {
-                                this.setSemester(semesters[0]);
-                            } else {
-                                this.endService(true);
-                            }
+                            this.endService(true);
                         }
                     } else {
                         this.callback.onRequestSemester(semesters);

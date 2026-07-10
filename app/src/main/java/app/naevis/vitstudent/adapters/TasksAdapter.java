@@ -64,10 +64,10 @@ public class TasksAdapter extends RecyclerView.Adapter<TasksAdapter.ViewHolder> 
 
         if (task.isDeadline) {
             holder.time.setText("Deadline: " + endStr);
-            holder.time.setTextColor(context.getResources().getColor(R.color.colorRed));
+            holder.time.setTextColor(context.getResources().getColor(R.color.colorRedPink));
         } else {
             holder.time.setText(startStr + " - " + endStr);
-            // reset color to default if needed (using theme colors in XML usually handles it)
+            holder.time.setTextColor(com.google.android.material.color.MaterialColors.getColor(holder.time, com.google.android.material.R.attr.colorOnSurfaceVariant));
         }
 
         holder.btnComplete.setOnClickListener(v -> {

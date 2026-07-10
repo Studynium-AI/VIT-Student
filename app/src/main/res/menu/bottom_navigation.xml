@@ -13,7 +13,7 @@
     <item
         android:id="@+id/item_assignments"
         android:icon="@drawable/ic_assignments"
-        android:title="Tasks" />
+        android:title="Planner" />
 
     <item
         android:id="@+id/item_profile"
